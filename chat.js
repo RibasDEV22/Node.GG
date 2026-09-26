@@ -1,12 +1,11 @@
 /* =========================================================
-   ZapZap – chat.js (MELHORADO)
+   ZapZap – chat.js (CORRIGIDO E OTIMIZADO)
    Contatos, mensagens, reply, edit, delete, forward
-   FIXES: Deduplicação, confirmação, timeout, recarregamento
    ========================================================= */
 
-// Estado local de deduplicação
 const sentMessageIds = new Set();
 const renderedMessageIds = new Set();
+let historyTimeout = null;
 
 function renderContacts(contacts) {
   const list = document.getElementById('contacts-list');
@@ -63,13 +62,15 @@ function selectContact(contact) {
   clearReply();
   closeMessageMenu();
   renderContacts(allContacts);
-  renderedMessageIds.clear(); // FIX #6.1: Limpa cache ao trocar contato
+  renderedMessageIds.clear();
 
   document.getElementById('empty-state')?.classList.add('hidden');
   document.getElementById('chat-header')?.classList.remove('hidden');
   document.getElementById('chat-messages')?.classList.remove('hidden');
   document.getElementById('chat-input-area')?.classList.remove('hidden');
-  document.getElementById('chat-user-name').textContent = contact.displayName || contact.username;
+  
+  const nameEl = document.getElementById('chat-user-name');
+  if (nameEl) nameEl.textContent = contact.displayName || contact.username;
   updateHeaderStatus();
 
   const av = document.getElementById('chat-user-avatar');
@@ -86,14 +87,12 @@ function selectContact(contact) {
   const box = document.getElementById('chat-messages');
   if (box) box.innerHTML = '';
 
-  // FIX #6.2: Timeout para histórico
-  const historyTimeout = setTimeout(() => {
-    console.warn('[Chat] Histórico não chegou em 10s, limpando');
+  if (historyTimeout) clearTimeout(historyTimeout);
+  historyTimeout = setTimeout(() => {
+    console.warn('[Chat] Histórico de mensagens demorando para carregar.');
   }, 10000);
-  
-  const originalSendWS = sendWS;
+
   sendWS({ type: 'get_chat_history', withUser: contact.username });
-  
   document.getElementById('app-container')?.classList.add('active-chat');
 }
 
@@ -115,36 +114,25 @@ function backToContacts() {
 
 // ========== MENSAGENS ==========
 function handleIncomingChatMessage(data) {
-  // FIX #6.1: Deduplicação robusta
   const msgId = data.id || data.messageId;
-  if (!msgId || renderedMessageIds.has(msgId)) {
-    console.log('[Chat] Mensagem duplicada ou sem ID:', msgId);
-    return;
-  }
-
-  const isOwn = data.from === (currentUser && currentUser.username) || data.confirmed;
-
-  if (!isOwn) {
-    playNotificationSound();
-    const preview = data.msg_type === 'text'
-      ? (data.text || '').slice(0, 80)
-      : '[' + (data.msg_type || 'mídia').toUpperCase() + ']';
-    showPushNotification('@' + data.from, preview, { tag: 'msg-' + data.from });
-  }
+  const tempId = data.tempId;
 
   if (data.confirmed) {
-    // FIX #6.1: Encontra temp message e substitui com ID real
-    const tempEl = document.querySelector('.message[data-tempid="' + (data.tempId || data.from + '-' + data.timestamp) + '"]');
+    const targetSelector = tempId
+      ? `.message[data-id="${tempId}"]`
+      : `.message[data-id="${data.from}-${data.timestamp}"]`;
+
+    const tempEl = document.querySelector(targetSelector);
     if (tempEl) {
-      tempEl.dataset.id = msgId;
-      delete tempEl.dataset.tempid;
-      renderedMessageIds.add(msgId);
+      if (msgId) {
+        tempEl.dataset.id = msgId;
+        renderedMessageIds.add(msgId);
+      }
       return;
     }
 
-    // Se não encontrou temp, adiciona se não está na tela
     if (activeChatTarget === data.to || activeChatTarget === data.from) {
-      if (!renderedMessageIds.has(msgId)) {
+      if (msgId && !renderedMessageIds.has(msgId)) {
         appendChatMessage({
           id: msgId,
           sender: data.from,
@@ -156,37 +144,47 @@ function handleIncomingChatMessage(data) {
           reply_preview: data.reply_preview,
           edited: data.edited
         });
-        renderedMessageIds.add(msgId);
       }
     }
   } else if (activeChatTarget === data.from) {
-    // Mensagem de terceiro
-    if (!renderedMessageIds.has(msgId)) {
-      appendChatMessage({
-        id: msgId,
-        sender: data.from,
-        content: data.text || data.media,
-        msg_type: data.msg_type || 'text',
-        media_meta: data.media_meta,
-        timestamp: data.timestamp,
-        isMe: false,
-        reply_preview: data.reply_preview,
-        edited: data.edited
-      });
-      renderedMessageIds.add(msgId);
+    if (msgId && renderedMessageIds.has(msgId)) return;
 
-      if (isAppFocused) {
-        sendWS({ type: 'mark_as_read', withUser: data.from });
-      }
+    appendChatMessage({
+      id: msgId,
+      sender: data.from,
+      content: data.text || data.media,
+      msg_type: data.msg_type || 'text',
+      media_meta: data.media_meta,
+      timestamp: data.timestamp,
+      isMe: false,
+      reply_preview: data.reply_preview,
+      edited: data.edited
+    });
+
+    if (isAppFocused) {
+      sendWS({ type: 'mark_as_read', withUser: data.from });
+    }
+
+    const isOwn = data.from === (currentUser && currentUser.username);
+    if (!isOwn) {
+      playNotificationSound();
+      const preview = data.msg_type === 'text'
+        ? (data.text || '').slice(0, 80)
+        : '[' + (data.msg_type || 'mídia').toUpperCase() + ']';
+      showPushNotification('@' + data.from, preview, { tag: 'msg-' + data.from });
     }
   }
 }
 
 function renderChatHistory(messages) {
+  if (historyTimeout) {
+    clearTimeout(historyTimeout);
+    historyTimeout = null;
+  }
   const box = document.getElementById('chat-messages');
   if (!box) return;
   box.innerHTML = '';
-  renderedMessageIds.clear(); // FIX #6.1: Limpa ao recarregar histórico
+  renderedMessageIds.clear();
 
   messages.forEach(m => {
     if (!renderedMessageIds.has(m.id)) {
@@ -202,7 +200,6 @@ function renderChatHistory(messages) {
         reply_preview: m.reply_preview,
         edited: m.edited
       });
-      renderedMessageIds.add(m.id);
     }
   });
 }
@@ -216,10 +213,7 @@ function appendChatMessage(opts) {
   const box = document.getElementById('chat-messages');
   if (!box) return;
 
-  // FIX #6.1: Deduplicação dupla
-  if (id && renderedMessageIds.has(id)) {
-    return;
-  }
+  if (id && renderedMessageIds.has(id)) return;
   if (id) renderedMessageIds.add(id);
 
   const div = document.createElement('div');
@@ -242,7 +236,7 @@ function appendChatMessage(opts) {
   if (deleted_for_all) {
     html += '<em class="deleted-msg">Mensagem apagada</em>';
   } else if (msg_type === 'image' && content) {
-    html += '<div class="media-bubble"><img src="' + safeContent + '" alt="imagem" loading="lazy" onclick="openMediaViewer(this.src,\'image\')" onerror="this.alt=\'Erro ao carregar imagem\'"></div>';
+    html += '<div class="media-bubble"><img src="' + safeContent + '" alt="imagem" loading="lazy" onclick="if(typeof openMediaViewer===\'function\') openMediaViewer(this.src,\'image\')" onerror="this.alt=\'Erro ao carregar imagem\'"></div>';
   } else if (msg_type === 'audio' && content) {
     html += '<div class="media-bubble audio-bubble">' +
       '<audio controls preload="metadata" src="' + safeContent + '" onerror="this.title=\'Erro ao carregar áudio\'"></audio>' +
@@ -253,7 +247,7 @@ function appendChatMessage(opts) {
   } else if (msg_type === 'file' && content) {
     const name = (media_meta && media_meta.name) || 'Arquivo';
     html += '<div class="media-bubble file-bubble">' +
-      '<a href="' + safeContent + '" download="' + escapeAttr(name) + '">📎 ' + escapeHTML(name) + '</a>' +
+      '<a href="' + safeContent + '" download="' + escapeAttr(name) + '" target="_blank">📎 ' + escapeHTML(name) + '</a>' +
       '</div>';
   } else {
     html += '<span class="msg-text">' + escapeHTML(content || '[vazio]') + '</span>';
@@ -262,6 +256,7 @@ function appendChatMessage(opts) {
 
   div.innerHTML = html;
 
+  let localTimer = null;
   let startX = 0, startY = 0, moved = false;
 
   const onStart = (e) => {
@@ -269,7 +264,8 @@ function appendChatMessage(opts) {
     startX = t.clientX;
     startY = t.clientY;
     moved = false;
-    longPressTimer = setTimeout(() => {
+    if (localTimer) clearTimeout(localTimer);
+    localTimer = setTimeout(() => {
       if (!moved) openMessageMenu(div, opts);
     }, 480);
   };
@@ -280,16 +276,18 @@ function appendChatMessage(opts) {
     const dy = t.clientY - startY;
     if (Math.abs(dx) > 12 || Math.abs(dy) > 12) {
       moved = true;
-      clearTimeout(longPressTimer);
+      if (localTimer) clearTimeout(localTimer);
     }
     if (dx > 60 && Math.abs(dy) < 40) {
-      clearTimeout(longPressTimer);
+      if (localTimer) clearTimeout(localTimer);
       setReply(opts);
       moved = true;
     }
   };
 
-  const onEnd = () => clearTimeout(longPressTimer);
+  const onEnd = () => {
+    if (localTimer) clearTimeout(localTimer);
+  };
 
   div.addEventListener('touchstart', onStart, { passive: true });
   div.addEventListener('touchmove', onMove, { passive: true });
@@ -317,13 +315,17 @@ function openMessageMenu(el, opts) {
   const isOwn = opts.isMe || opts.sender === (currentUser && currentUser.username);
   const canEdit = isOwn && opts.msg_type === 'text' && opts.id &&
     !String(opts.id).startsWith('temp-') &&
-    (Date.now() - (Number(opts.timestamp) || Number(el.dataset.ts) || 0)) <= 300000;
+    (Date.now() - (Number(opts.timestamp) || Number(el.dataset.ts) || Date.now())) <= 300000;
 
-  menu.querySelector('[data-action="reply"]').style.display = '';
-  menu.querySelector('[data-action="forward"]').style.display = '';
-  menu.querySelector('[data-action="edit"]').style.display = canEdit ? '' : 'none';
-  menu.querySelector('[data-action="delete"]').style.display =
-    opts.id && !String(opts.id).startsWith('temp-') ? '' : 'none';
+  const replyBtn = menu.querySelector('[data-action="reply"]');
+  const forwardBtn = menu.querySelector('[data-action="forward"]');
+  const editBtn = menu.querySelector('[data-action="edit"]');
+  const deleteBtn = menu.querySelector('[data-action="delete"]');
+
+  if (replyBtn) replyBtn.style.display = '';
+  if (forwardBtn) forwardBtn.style.display = '';
+  if (editBtn) editBtn.style.display = canEdit ? '' : 'none';
+  if (deleteBtn) deleteBtn.style.display = opts.id && !String(opts.id).startsWith('temp-') ? '' : 'none';
 
   menu.classList.remove('hidden');
 }
@@ -357,8 +359,10 @@ function setReply(m) {
   const bar = document.getElementById('reply-bar');
   if (bar) {
     bar.classList.remove('hidden');
-    bar.querySelector('.reply-bar-user').textContent = m.sender || '';
-    bar.querySelector('.reply-bar-text').textContent = replyToMessage.content;
+    const uEl = bar.querySelector('.reply-bar-user');
+    const tEl = bar.querySelector('.reply-bar-text');
+    if (uEl) uEl.textContent = m.sender || '';
+    if (tEl) tEl.textContent = replyToMessage.content;
   }
   document.getElementById('message-input')?.focus();
 }
@@ -381,12 +385,12 @@ function applyMessageEdit(id, text) {
   const el = document.querySelector('.message[data-id="' + id + '"] .msg-text');
   if (el) {
     el.textContent = text;
-    const tag = el.parentElement.querySelector('.edited-tag');
-    if (!tag) {
+    const parent = el.parentElement;
+    if (parent && !parent.querySelector('.edited-tag')) {
       const s = document.createElement('span');
       s.className = 'edited-tag';
       s.textContent = ' (editado)';
-      el.parentElement.appendChild(s);
+      parent.appendChild(s);
     }
   }
 }
@@ -478,8 +482,7 @@ function sendMessage() {
     return;
   }
 
-  // FIX #6.2: Gera ID único para deduplicação
-  const tempId = 'temp-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+  const tempId = 'temp-' + Date.now() + '-' + Math.random().toString(36).substring(2, 9);
   sentMessageIds.add(tempId);
 
   const msgData = {
@@ -488,10 +491,9 @@ function sendMessage() {
     text,
     msg_type: 'text',
     reply_to: replyToMessage ? replyToMessage.id : null,
-    tempId: tempId // Para rastrear
+    tempId: tempId
   };
 
-  // Tenta enviar, se falhar enfileira
   const sent = sendWS(msgData);
   if (!sent) {
     messageQueue.add(msgData);
@@ -507,7 +509,6 @@ function sendMessage() {
     reply_preview: replyToMessage,
     timestamp: Date.now()
   });
-  renderedMessageIds.add(tempId);
 
   input.value = '';
   clearReply();
