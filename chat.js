@@ -87,10 +87,14 @@ function selectContact(contact) {
   const box = document.getElementById('chat-messages');
   if (box) box.innerHTML = '';
 
-  if (historyTimeout) clearTimeout(historyTimeout);
-  historyTimeout = setTimeout(() => {
-    console.warn('[Chat] Histórico de mensagens demorando para carregar.');
-  }, 10000);
+     if (historyTimeout) {
+       clearTimeout(historyTimeout);
+       historyTimeout = null;  // FIX #6.0: Limpa referência
+   }
+   historyTimeout = setTimeout(() => {
+       console.warn('[Chat] Histórico de mensagens demorando para carregar.');
+       historyTimeout = null;  // FIX #6.0: Reseta após expirar
+   }, 10000);
 
   sendWS({ type: 'get_chat_history', withUser: contact.username });
   document.getElementById('app-container')?.classList.add('active-chat');
@@ -177,11 +181,11 @@ function handleIncomingChatMessage(data) {
 }
 
 function renderChatHistory(messages) {
-  if (historyTimeout) {
-    clearTimeout(historyTimeout);
-    historyTimeout = null;
-  }
-  const box = document.getElementById('chat-messages');
+   if (historyTimeout) {
+       clearTimeout(historyTimeout);
+       historyTimeout = null;  // FIX #7.0: Limpa referência
+   }
+   const box = document.getElementById('chat-messages');
   if (!box) return;
   box.innerHTML = '';
   renderedMessageIds.clear();
