@@ -6,6 +6,16 @@ let powerBlockerId = null;
 const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {
   app.quit();
+} else {
+  app.on('second-instance', () => {
+    const wins = BrowserWindow.getAllWindows();
+    if (wins.length > 0) {
+      const win = wins[0];
+      if (win.isMinimized()) win.restore();
+      if (!win.isVisible()) win.show();
+      win.focus();
+    }
+  });
 }
 
 function createWindow() {
@@ -19,8 +29,8 @@ function createWindow() {
     show: false,
     backgroundColor: '#0b141a',
     webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false,
+      nodeIntegration: false,
+      contextIsolation: true,
       webSecurity: true,
       backgroundThrottling: false
     }
@@ -47,11 +57,21 @@ function createWindow() {
   });
 
   win.on('restore', () => {
-    if (powerBlockerId !== null && powerSaveBlocker.isStarted(powerBlockerId)) {
-      powerSaveBlocker.stop(powerBlockerId);
-      powerBlockerId = null;
-    }
+    stopPowerBlocker();
   });
+
+  win.on('closed', () => {
+    stopPowerBlocker();
+  });
+}
+
+function stopPowerBlocker() {
+  if (powerBlockerId !== null) {
+    if (powerSaveBlocker.isStarted(powerBlockerId)) {
+      powerSaveBlocker.stop(powerBlockerId);
+    }
+    powerBlockerId = null;
+  }
 }
 
 async function clearAppCache() {
@@ -67,10 +87,12 @@ async function clearAppCache() {
 app.whenReady().then(async () => {
   await clearAppCache();
 
-  session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
-    const allowed = ['media', 'notifications', 'pointerLock', 'fullscreen', 'clipboard-read'];
-    callback(allowed.includes(permission));
-  });
+  if (session.defaultSession) {
+    session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
+      const allowed = ['media', 'notifications', 'pointerLock', 'fullscreen', 'clipboard-read'];
+      callback(allowed.includes(permission));
+    });
+  }
 
   if (Notification.isSupported()) {
     console.log('[Electron] Notificações nativas suportadas');
@@ -80,20 +102,10 @@ app.whenReady().then(async () => {
 });
 
 app.on('window-all-closed', () => {
-  if (powerBlockerId !== null && powerSaveBlocker.isStarted(powerBlockerId)) {
-    powerSaveBlocker.stop(powerBlockerId);
-  }
+  stopPowerBlocker();
   if (process.platform !== 'darwin') app.quit();
 });
 
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) createWindow();
-});
-
-app.on('second-instance', () => {
-  const wins = BrowserWindow.getAllWindows();
-  if (wins.length) {
-    if (wins[0].isMinimized()) wins[0].restore();
-    wins[0].focus();
-  }
 });
