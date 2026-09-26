@@ -1,11 +1,10 @@
 /* =========================================================
-   ZapZap – core.js (MELHORADO)
+   ZapZap – core.js (CORRIGIDO E OTIMIZADO)
    Estado global, WebSocket, autenticação, tema, notificações
-   FIXES: Session tokens, reconexão robusta, background suport
    ========================================================= */
 
 const WS_URL = 'wss://zap-zap-24qi.onrender.com';
-const RECONNECT_INTERVALS = [1000, 2000, 4000, 8000, 15000]; // Backoff exponencial
+const RECONNECT_INTERVALS = [1000, 2000, 4000, 8000, 15000];
 const MAX_RECONNECT_ATTEMPTS = 15;
 const MESSAGE_QUEUE_STORAGE = 'zap_message_queue';
 const SESSION_STORAGE = 'zap_session_token';
@@ -16,7 +15,6 @@ const RTC_CONFIG = {
     { urls: 'stun:stun1.l.google.com:19302' },
     { urls: 'stun:stun2.l.google.com:19302' },
     { urls: 'stun:stun4.l.google.com:19302' },
-    { urls: 'stun:openrelay.metered.ca:80' },
     { urls: 'turn:openrelay.metered.ca:80', username: 'openrelay', credential: 'openrelay' },
     { urls: 'turn:openrelay.metered.ca:443', username: 'openrelay', credential: 'openrelay' },
     { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelay', credential: 'openrelay' }
@@ -37,12 +35,10 @@ let allContacts = [];
 let currentTheme = localStorage.getItem('zap_theme') || 'dark';
 let replyToMessage = null;
 let selectedMessage = null;
-let longPressTimer = null;
 let searchDebounceTimer = null;
 let isAppFocused = true;
 let messageQueueTimer = null;
 
-// FIX #5.1: Session token do servidor
 let currentSessionToken = localStorage.getItem(SESSION_STORAGE) || null;
 
 // Áudio prefs
@@ -65,7 +61,7 @@ soundCall.loop = true;
 let audioCtx = null;
 let syntheticRingtoneInterval = null;
 
-// Chamada
+// Chamada WebRTC
 let currentCall = {
   peerConnection: null,
   localStream: null,
@@ -75,7 +71,7 @@ let currentCall = {
 };
 let pendingIceCandidates = [];
 
-// ========== FILA DE MENSAGENS (PERSISTÊNCIA) ==========
+// ========== FILA DE MENSAGENS ==========
 class MessageQueue {
   constructor() {
     this.queue = this.loadQueue();
@@ -83,7 +79,7 @@ class MessageQueue {
 
   add(message) {
     const item = {
-      id: 'temp-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9),
+      id: message.tempId || ('temp-' + Date.now() + '-' + Math.random().toString(36).substring(2, 9)),
       data: message,
       timestamp: Date.now(),
       retries: 0
@@ -94,12 +90,15 @@ class MessageQueue {
   }
 
   remove(id) {
-    this.queue = this.queue.filter(m => m.id !== id);
+    this.queue = this.queue.filter(m => m.id !== id && m.data?.tempId !== id);
     this.saveQueue();
   }
 
   getAll() {
-    return this.queue.filter(m => Date.now() - m.timestamp < 300000); // 5 min
+    const now = Date.now();
+    this.queue = this.queue.filter(m => now - m.timestamp < 300000);
+    this.saveQueue();
+    return this.queue;
   }
 
   clear() {
@@ -244,8 +243,7 @@ function showPushNotification(title, body, options = {}) {
         tag: options.tag || 'zapzap',
         renotify: true,
         requireInteraction: !!options.requireInteraction,
-        silent: false,
-        badge: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">⚡</text></svg>'
+        silent: false
       });
       n.onclick = () => {
         window.focus();
@@ -272,7 +270,7 @@ function showInAppToast(title, body) {
   t._timer = setTimeout(() => t.classList.remove('show'), 4000);
 }
 
-// ========== VISIBILIDADE & BACKGROUND ==========
+// ========== VISIBILIDADE ==========
 function sendAppVisibility(focused) {
   isAppFocused = !!focused;
   sendWS({ type: 'app_visibility', focused: isAppFocused });
@@ -283,7 +281,6 @@ function setupVisibilityListeners() {
     const isFocused = document.visibilityState === 'visible';
     sendAppVisibility(isFocused);
     if (isFocused) {
-      // FIX #5.4: Recarrega contatos e announcements ao retornar
       sendWS({ type: 'get_contacts' });
       sendWS({ type: 'get_announcements' });
     }
@@ -292,7 +289,7 @@ function setupVisibilityListeners() {
   window.addEventListener('blur', () => sendAppVisibility(false));
 }
 
-// ========== WEBSOCKET COM RECONEXÃO ROBUSTA ==========
+// ========== WEBSOCKET ==========
 function hideSplashScreen() {
   const bar = document.getElementById('splash-bar');
   const ov = document.getElementById('splash-screen');
@@ -321,13 +318,11 @@ function connectWebSocket() {
 
     sendAppVisibility(document.visibilityState === 'visible');
 
-    // FIX #5.1: Tenta reconectar com session token
     const token = localStorage.getItem(SESSION_STORAGE);
     if (token) {
       console.log('[WS] Reconectando com session token');
-      sendWS({ type: reconnect_session, sessionToken: token });
+      sendWS({ type: 'reconnect_session', sessionToken: token });
     } else {
-      // Tenta autenticar com credenciais antigas
       const saved = localStorage.getItem('zap_session');
       if (saved) {
         try {
@@ -342,7 +337,6 @@ function connectWebSocket() {
       }
     }
 
-    // Processa fila de mensagens pendentes
     flushMessageQueue();
   };
 
@@ -367,7 +361,6 @@ function connectWebSocket() {
     if (pingInterval) clearInterval(pingInterval);
     updateNetworkStatus('connecting', 'Reconectando...');
     
-    // FIX #5.2: Backoff exponencial
     const interval = RECONNECT_INTERVALS[Math.min(reconnectAttempts, RECONNECT_INTERVALS.length - 1)];
     reconnectAttempts++;
 
@@ -380,7 +373,7 @@ function connectWebSocket() {
       }
     } else {
       updateNetworkStatus('offline', 'Falha ao conectar. Recarregando...');
-      setTimeout(() => location.reload(), 3000);
+      setTimeout(() => location.reload(), 4000);
     }
   };
 }
@@ -420,12 +413,11 @@ function flushMessageQueue() {
   }, 1000);
 }
 
-// ========== HANDLER CENTRAL DE MENSAGENS DO SERVIDOR ==========
+// ========== HANDLER CENTRAL DE MENSAGENS ==========
 function handleServerMessage(data) {
   switch (data.type) {
     case 'auth_success':
       currentUser = data.user;
-      // FIX #5.1: Salva session token do servidor
       if (data.sessionToken) {
         currentSessionToken = data.sessionToken;
         localStorage.setItem(SESSION_STORAGE, data.sessionToken);
@@ -449,6 +441,7 @@ function handleServerMessage(data) {
     case 'reconnect_success':
       console.log('[WS] Reconexão com token bem-sucedida');
       currentUser = data.user;
+      hideSplashScreen();
       showMainScreen();
       renderUserProfile();
       sendWS({ type: 'get_contacts' });
@@ -506,24 +499,11 @@ function handleServerMessage(data) {
       }
       break;
 
-    case 'messages_read':
-      break;
-
-    case 'chat_error':
-      alert(data.message || 'Erro no chat');
-      break;
-
     case 'maintenance_active':
       alert(data.message || 'Servidor em manutenção. Tente novamente mais tarde.');
       localStorage.removeItem(SESSION_STORAGE);
       localStorage.removeItem('zap_session');
       location.reload();
-      break;
-
-    case 'maintenance_status':
-      if (data.active) {
-        showInAppToast('Manutenção', data.message || 'Servidor em manutenção');
-      }
       break;
 
     case 'announcements_list':
@@ -565,12 +545,6 @@ function handleServerMessage(data) {
     case 'call_ended':
       if (typeof cleanupCall === 'function') cleanupCall();
       break;
-    case 'reaction_updated':
-    case 'reaction_removed':
-      if (typeof applyReactionUpdate === 'function') {
-        applyReactionUpdate(data);
-      }
-      break;
 
     default:
       break;
@@ -591,17 +565,17 @@ function toggleAuthMode(e) {
   if (err) err.classList.add('hidden');
 
   if (isRegisterMode) {
-    title.innerText = 'Criar Nova Conta';
-    reg.classList.remove('hidden');
-    btn.innerText = 'Cadastrar';
-    tt.innerText = 'Já possui conta?';
-    tb.innerText = 'Entrar';
+    if (title) title.innerText = 'Criar Nova Conta';
+    if (reg) reg.classList.remove('hidden');
+    if (btn) btn.innerText = 'Cadastrar';
+    if (tt) tt.innerText = 'Já possui conta?';
+    if (tb) tb.innerText = 'Entrar';
   } else {
-    title.innerText = 'Entrar no Zap Zap';
-    reg.classList.add('hidden');
-    btn.innerText = 'Entrar';
-    tt.innerText = 'Não tem conta?';
-    tb.innerText = 'Cadastrar-se';
+    if (title) title.innerText = 'Entrar no Zap Zap';
+    if (reg) reg.classList.add('hidden');
+    if (btn) btn.innerText = 'Entrar';
+    if (tt) tt.innerText = 'Não tem conta?';
+    if (tb) tb.innerText = 'Cadastrar-se';
   }
 }
 
@@ -624,8 +598,12 @@ function handleAuthSubmit(event) {
   event.preventDefault();
   getAudioContext();
 
-  const username = document.getElementById('auth-username').value.trim();
-  const password = document.getElementById('auth-password').value;
+  const usernameEl = document.getElementById('auth-username');
+  const passwordEl = document.getElementById('auth-password');
+  const displayEl = document.getElementById('auth-displayname');
+
+  const username = usernameEl ? usernameEl.value.trim() : '';
+  const password = passwordEl ? passwordEl.value : '';
 
   if (password.length < 6) {
     showAuthError('A senha deve ter no mínimo 6 caracteres.');
@@ -636,7 +614,7 @@ function handleAuthSubmit(event) {
     type: isRegisterMode ? 'register' : 'login',
     username,
     password,
-    displayName: (document.getElementById('auth-displayname') || {}).value?.trim() || undefined,
+    displayName: (displayEl && displayEl.value.trim()) ? displayEl.value.trim() : null,
     avatar: userAvatarBase64
   });
 }
@@ -687,7 +665,6 @@ function logout() {
   location.reload();
 }
 
-// ========== SERVICE WORKER REGISTRATION ==========
 function registerServiceWorker() {
   if ('serviceWorker' in navigator && isSecureContext()) {
     navigator.serviceWorker.register('sw.js').then(reg => {
@@ -714,18 +691,10 @@ document.addEventListener('DOMContentLoaded', () => {
       if (typeof closeMessageMenu === 'function') closeMessageMenu();
     }
   });
-
-  // Mantém app vivo em background
-  if ('serviceWorker' in navigator && currentCall.isActive) {
-    navigator.serviceWorker.ready.then(reg => {
-      reg.active?.postMessage({ type: 'keep_alive' });
-    });
-  }
 });
 
-// Limpa antes de sair
 window.addEventListener('beforeunload', () => {
-  if (currentCall.isActive) {
+  if (currentCall && currentCall.isActive) {
     sendWS({ type: 'call_end', to: currentCall.targetUser });
   }
 });
