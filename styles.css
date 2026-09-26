@@ -816,3 +816,106 @@ img { max-width: 100%; display: block; }
 .search-area input {
     padding-left: 36px;
 }
+
+/* ========== ICONES & TEMAS ========== */
+
+/* Correção para acessibilidade */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* Melhor suporte a zoom */
+body {
+    -webkit-text-size-adjust: 100%;
+    -moz-text-size-adjust: 100%;
+    -ms-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+}
+
+/* Icons responsivos */
+.icon-sm {
+    width: 20px;
+    height: 20px;
+    display: inline-block;
+    vertical-align: middle;
+    object-fit: contain;
+}
+
+.icon-md {
+    width: 24px;
+    height: 24px;
+    display: inline-block;
+    vertical-align: middle;
+    object-fit: contain;
+}
+
+.btn-icon img {
+    width: 20px;
+    height: 20px;
+    pointer-events: none;
+}
+
+.search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 18px;
+    height: 18px;
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.search-area {
+    position: relative;
+    padding: 8px;
+}
+
+.search-area input {
+    padding-left: 36px !important;
+}
+
+/* Temas para ícones */
+:root[data-theme="dark"] .btn-icon img {
+    filter: brightness(0.9) invert(0.9);
+}
+
+:root[data-theme="light"] .btn-icon img {
+    filter: brightness(1) invert(0.05);
+}
+
+:root[data-theme="dark"] .search-icon {
+    filter: brightness(0.9) invert(0.9);
+}
+
+:root[data-theme="light"] .search-icon {
+    filter: brightness(1) invert(0.05);
+}
+
+/* Melhorias de UX com zoom */
+input, textarea, select, button {
+    font-size: 16px; /* Evita zoom automático em iOS */
+}
+
+/* Media query para dispositivos pequenos */
+@media (max-width: 480px) {
+    .icon-sm {
+        width: 18px;
+        height: 18px;
+    }
+    
+    .icon-md {
+        width: 22px;
+        height: 22px;
+    }
+    
+    .btn-icon {
+        padding: 8px;
+        min-width: 36px;
+        min-height: 36px;
+    }
+}
