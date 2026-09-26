@@ -433,6 +433,20 @@ function handleServerMessage(data) {
       requestNotificationPermission();
       break;
 
+    // FIX #3.0: Novo case para reconnect com session token
+    case 'reconnect_success':
+      console.log('[WS] Reconexão com token bem-sucedida');
+      currentUser = data.user;
+      currentSessionToken = data.sessionToken;
+      localStorage.setItem(SESSION_STORAGE, data.sessionToken);
+      hideSplashScreen();
+      showMainScreen();
+      renderUserProfile();
+      sendWS({ type: 'get_contacts' });
+      sendWS({ type: 'get_announcements' });
+      requestNotificationPermission();
+      break;
+
     case 'auth_error':
       hideSplashScreen();
       showAuthError(data.message || 'Erro de autenticação');
