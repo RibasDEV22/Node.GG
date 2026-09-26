@@ -236,7 +236,8 @@ function appendChatMessage(opts) {
   if (deleted_for_all) {
     html += '<em class="deleted-msg">Mensagem apagada</em>';
   } else if (msg_type === 'image' && content) {
-    html += '<div class="media-bubble"><img src="' + safeContent + '" alt="imagem" loading="lazy" onclick="if(typeof openMediaViewer===\'function\') openMediaViewer(this.src,\'image\')" onerror="this.alt=\'Erro ao carregar imagem\'"></div>';
+        } else if (msg_type === 'image' && content) {
+      html += '<div class="media-bubble"><img src="' + safeContent + '" alt="imagem" loading="lazy" onclick="if(typeof openMediaViewer===\'function\') openMediaViewer(this.src,\'image\')" onerror="this.title=\'Erro ao carregar imagem\'"></div>';
   } else if (msg_type === 'audio' && content) {
     html += '<div class="media-bubble audio-bubble">' +
       '<audio controls preload="metadata" src="' + safeContent + '" onerror="this.title=\'Erro ao carregar áudio\'"></audio>' +
