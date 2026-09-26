@@ -245,13 +245,21 @@ function cancelVoiceRecord() {
 }
 
 function cleanupRecordStream() {
-  isRecording = false;
-  if (recordingStream) {
-    recordingStream.getTracks().forEach(t => t.stop());
-    recordingStream = null;
-  }
-  document.getElementById('recording-bar')?.classList.add('hidden');
-  document.getElementById('btn-record')?.classList.remove('recording');
+   isRecording = false;
+   if (recordingStream) {
+       recordingStream.getTracks().forEach(t => t.stop());
+       recordingStream = null;
+   }
+   // FIX #8.0: Limpa elementos UI com segurança
+   const recBar = document.getElementById('recording-bar');
+   const recBtn = document.getElementById('btn-record');
+   
+   if (recBar) {
+       try { recBar.classList.add('hidden'); } catch {}
+   }
+   if (recBtn) {
+       try { recBtn.classList.remove('recording'); } catch {}
+   }
 }
 
 // ========== VISUALIZADOR DE MÍDIA ==========
