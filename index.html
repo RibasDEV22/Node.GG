@@ -2,7 +2,7 @@
 <html lang="pt-BR" data-theme="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
     <meta name="theme-color" content="#0b1114">
     <title>Zap Zap - Voz e Mensagens</title>
     <link rel="stylesheet" href="styles.css">
@@ -47,7 +47,9 @@
             <form id="auth-form" onsubmit="handleAuthSubmit(event)">
                 <div id="register-fields" class="register-fields hidden">
                     <div class="avatar-upload-box">
-                        <div id="avatar-preview" class="avatar-preview" onclick="document.getElementById('avatar-input').click()">📷</div>
+                        <div id="avatar-preview" class="avatar-preview" onclick="document.getElementById('avatar-input').click()">
+                            <img src="icon_attachment.png" alt="Foto" style="width:40px;height:40px;opacity:0.5;">
+                        </div>
                         <label for="avatar-input" class="btn-avatar-select">Escolher Foto</label>
                         <input type="file" id="avatar-input" accept="image/*" class="hidden" onchange="previewAvatar(event)">
                     </div>
@@ -80,13 +82,20 @@
                     <div id="my-username" class="user-handle">@usuario</div>
                 </div>
                 <div class="header-actions">
-                    <button id="theme-toggle-btn" class="btn-icon" type="button" title="Alternar tema" onclick="toggleTheme()">☀️</button>
-                    <button class="btn-icon" type="button" title="Configurações" onclick="showSettings()">⚙️</button>
-                    <button class="btn-logout btn-icon" type="button" title="Sair" onclick="logout()">🚪</button>
+                    <button id="theme-toggle-btn" class="btn-icon" type="button" title="Alternar tema" onclick="toggleTheme()">
+                        <img src="icon_light_mode.png" alt="Tema" class="icon-sm">
+                    </button>
+                    <button class="btn-icon" type="button" title="Configurações" onclick="showSettings()">
+                        <img src="icon_settings.png" alt="Configurações" class="icon-sm">
+                    </button>
+                    <button class="btn-logout btn-icon" type="button" title="Sair" onclick="logout()">
+                        <img src="icon_logout.png" alt="Sair" class="icon-sm">
+                    </button>
                 </div>
             </header>
 
             <div class="search-area">
+                <img src="icon_search.png" alt="Buscar" class="search-icon">
                 <input type="search" id="search-input" placeholder="Buscar membros..." oninput="filterContactsDebounced()">
             </div>
 
@@ -131,10 +140,14 @@
             </div>
 
             <footer id="chat-input-area" class="chat-input-area hidden">
-                <label for="file-input" class="btn-attach" title="Anexar arquivo">📎</label>
+                <label for="file-input" class="btn-attach" title="Anexar arquivo">
+                    <img src="icon_attachment.png" alt="Anexar" class="icon-md">
+                </label>
                 <input type="file" id="file-input" class="hidden" accept="image/*,audio/*,video/*,.pdf,.doc,.docx,.txt,.zip" onchange="handleFileSelect(event)">
 
-                <button id="btn-record" type="button" class="btn-record" title="Gravar áudio" onclick="isRecording ? stopVoiceRecord() : startVoiceRecord()">🎤</button>
+                <button id="btn-record" type="button" class="btn-record" title="Gravar áudio" onclick="isRecording ? stopVoiceRecord() : startVoiceRecord()">
+                    <img src="icon_record_audio.png" alt="Gravar" class="icon-md">
+                </button>
 
                 <input type="text" id="message-input" placeholder="Mensagem..." onkeydown="handleKeyPress(event)" maxlength="2000">
 
@@ -188,7 +201,9 @@
                 <section class="setting-section">
                     <h4>Perfil</h4>
                     <div class="avatar-upload-box">
-                        <div id="profile-avatar-preview" class="avatar-preview" onclick="document.getElementById('profile-avatar-input').click()">📷</div>
+                        <div id="profile-avatar-preview" class="avatar-preview" onclick="document.getElementById('profile-avatar-input').click()">
+                            <img src="icon_attachment.png" alt="Foto" style="width:40px;height:40px;opacity:0.5;">
+                        </div>
                         <input type="file" id="profile-avatar-input" accept="image/*" class="hidden" onchange="previewProfileAvatar(event)">
                     </div>
 
