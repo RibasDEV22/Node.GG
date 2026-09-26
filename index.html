@@ -3,246 +3,303 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="theme-color" content="#111b21" media="(prefers-color-scheme: dark)">
-    <meta name="theme-color" content="#f0f2f5" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#0b1114" media="(prefers-color-scheme: dark)">
+    <meta name="theme-color" content="#f8faf9" media="(prefers-color-scheme: light)">
     <meta name="color-scheme" content="dark light">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Zap Zap">
     <meta name="application-name" content="Zap Zap">
+    <meta name="description" content="Zap Zap - plataforma de mensagens e chamadas em tempo real">
+    <meta name="keywords" content="chat, mensagens, voz, comunicação">
     <meta name="format-detection" content="telephone=no">
-    <meta name="msapplication-TileColor" content="#111b21">
+    <meta name="msapplication-TileColor" content="#0b1114">
     <meta name="msapplication-tap-highlight" content="no">
     <title>Zap Zap - Voz e Mensagens</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
 </head>
 <body>
-    <div id="network-bar" class="network-bar connecting hidden" role="status" aria-live="polite">Conectando...</div>
-    <div id="in-app-toast" class="in-app-toast" aria-live="polite"></div>
+    <div id="network-bar" class="network-bar connecting hidden" role="status" aria-live="polite" aria-label="Status da conexão">Conectando...</div>
+
+    <div id="in-app-toast" class="in-app-toast" role="alert" aria-live="assertive" aria-atomic="true"></div>
 
     <!-- SPLASH -->
-    <div id="splash-screen" class="splash-overlay">
+    <div id="splash-screen" class="splash-overlay" role="presentation">
         <div class="splash-content">
-            <div class="splash-logo-box"><div>⚡</div></div>
+            <div class="splash-logo-box" aria-hidden="true">⚡</div>
             <h1 class="splash-title">Zap Zap</h1>
             <p class="splash-sub">Iniciando...</p>
-            <div class="splash-loader"><div id="splash-bar" class="splash-bar"></div></div>
+            <div class="splash-loader" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                <div id="splash-bar" class="splash-bar"></div>
+            </div>
         </div>
     </div>
 
-    <!-- UPDATE (apenas informativo) -->
-    <div id="update-screen" class="update-overlay hidden">
-        <div class="update-box">
-            <div class="update-header">
-                <div class="update-icon">🚀</div>
-                <h2 id="update-title">Novidades</h2>
-                <p id="update-version-text">Confira as novidades</p>
+    <!-- UPDATE -->
+    <div id="update-screen" class="splash-overlay hidden" role="dialog" aria-labelledby="update-title">
+        <div class="modal-box">
+            <div style="padding:20px;border-bottom:1px solid var(--border);">
+                <div style="font-size:32px;margin-bottom:12px;text-align:center;">🚀</div>
+                <h2 id="update-title" style="text-align:center;margin-bottom:8px;">Novidades</h2>
+                <p id="update-version-text" style="text-align:center;color:var(--text-muted);font-size:12px;">Confira as novidades</p>
             </div>
-            <div id="update-step-info" class="update-step">
-                <div class="changelog-title">O que há de novo:</div>
-                <div id="update-changelog" class="update-changelog">Buscando...</div>
+            <div class="modal-body">
+                <div style="margin-bottom:16px;">
+                    <h4 style="color:var(--accent);font-size:12px;margin-bottom:12px;font-weight:700;">O que há de novo:</h4>
+                    <div id="update-changelog" style="font-size:12px;line-height:1.6;color:var(--text-secondary);">Buscando...</div>
+                </div>
                 <button id="btn-start-update" class="btn-primary btn-full" type="button">Entendi</button>
             </div>
-            <div id="update-step-progress" class="update-step hidden"></div>
-            <div id="update-step-complete" class="update-step hidden"></div>
         </div>
     </div>
 
     <!-- AUTH -->
-    <div id="auth-screen" class="auth-overlay">
+    <div id="auth-screen" class="auth-overlay" role="dialog" aria-labelledby="auth-title">
         <div class="auth-box">
             <h2 id="auth-title">Entrar no Zap Zap</h2>
-            <div id="auth-error-msg" class="auth-error hidden" role="alert"></div>
+
+            <div id="auth-error-msg" class="auth-error hidden" role="alert" aria-live="assertive"></div>
+
             <form id="auth-form" onsubmit="handleAuthSubmit(event)" novalidate>
                 <div id="register-fields" class="register-fields hidden">
                     <div class="avatar-upload-box">
-                        <div id="avatar-preview" class="avatar-preview" onclick="document.getElementById('avatar-input').click()">📷</div>
+                        <div id="avatar-preview"
+                             class="avatar-preview"
+                             role="button"
+                             tabindex="0"
+                             onclick="document.getElementById('avatar-input').click()"
+                             onkeydown="if(event.key === 'Enter') document.getElementById('avatar-input').click()">
+                            📷
+                        </div>
                         <label for="avatar-input" class="btn-avatar-select">Escolher Foto</label>
-                        <input type="file" id="avatar-input" accept="image/*" class="hidden" onchange="previewAvatar(event)">
+                        <input type="file" id="avatar-input" accept="image/*" class="hidden" onchange="previewAvatar(event)" aria-label="Enviar foto de perfil">
                     </div>
-                    <input type="text" id="auth-displayname" class="input-field" placeholder="Nome de Exibição" maxlength="30" autocomplete="name">
+
+                    <input type="text" id="auth-displayname" class="input-field" placeholder="Nome de Exibição" maxlength="30" autocomplete="name" aria-label="Nome de Exibição">
                 </div>
-                <input type="text" id="auth-username" class="input-field" placeholder="Usuário (@exemplo)" required autocomplete="username" pattern="[a-zA-Z0-9_]{3,20}" spellcheck="false" minlength="3" maxlength="20">
-                <input type="password" id="auth-password" class="input-field" placeholder="Senha (mín. 6 caracteres)" required autocomplete="current-password" minlength="6" maxlength="128">
+
+                <input type="text" id="auth-username" class="input-field" placeholder="Usuário (@exemplo)" required autocomplete="username" pattern="[a-zA-Z0-9_]{3,20}" spellcheck="false" minlength="3" aria-label="Nome de usuário" aria-required="true">
+                <input type="password" id="auth-password" class="input-field" placeholder="Senha (mín. 6 caracteres)" required autocomplete="current-password" minlength="6" maxlength="128" aria-label="Senha" aria-required="true">
+
                 <button type="submit" id="auth-btn-submit" class="btn-primary btn-full">Entrar</button>
             </form>
+
             <div class="auth-toggle">
                 <span id="auth-toggle-text">Não tem uma conta?</span>
-                <button id="auth-toggle-btn" type="button" class="btn-link" onclick="toggleAuthMode(event)">Cadastrar-se</button>
+                <button id="auth-toggle-btn" type="button" class="btn-link" onclick="toggleAuthMode(event)" aria-label="Alternar entre login e registro">Cadastrar-se</button>
             </div>
         </div>
     </div>
 
     <!-- APP -->
-    <div id="app-container" class="app-window hidden">
-        <aside class="sidebar">
+    <div id="app-container" class="app-window hidden" role="main">
+        <aside class="sidebar" role="complementary" aria-label="Painel lateral de contatos">
             <header class="user-header">
-                <div id="my-avatar" class="avatar">U</div>
+                <div id="my-avatar" class="avatar" aria-hidden="true">U</div>
+
                 <div class="user-info">
                     <div class="user-name-row">
                         <span id="my-display-name">...</span>
-                        <span id="my-role" class="role-badge role-Membro">Membro</span>
+                        <span id="my-role" class="role-badge role-Membro" aria-label="Função do usuário">Membro</span>
                     </div>
-                    <div id="my-username" class="user-handle">@usuario</div>
+                    <div id="my-username" class="user-handle" aria-label="Username">@usuario</div>
                 </div>
-                <button id="theme-toggle-btn" class="btn-icon" type="button" title="Tema" onclick="toggleTheme()">☀️</button>
-                <button class="btn-icon" type="button" title="Configurações" onclick="showSettings()">⚙️</button>
-                <button class="btn-logout" type="button" title="Sair" onclick="logout()">🚪</button>
+
+                <div class="header-actions">
+                    <button id="theme-toggle-btn" class="btn-icon" type="button" title="Alternar tema" aria-label="Alternar tema escuro/claro" onclick="toggleTheme()">☀️</button>
+                    <button class="btn-icon" type="button" title="Configurações" aria-label="Abrir configurações" onclick="showSettings()">⚙️</button>
+                    <button class="btn-logout btn-icon" type="button" title="Sair" aria-label="Fazer logout" onclick="logout()">🚪</button>
+                </div>
             </header>
+
             <div class="search-area">
-                <input type="search" id="search-input" placeholder="Buscar membros..." oninput="filterContactsDebounced()" autocomplete="off" spellcheck="false">
+                <input type="search" id="search-input" placeholder="Buscar membros..." oninput="filterContactsDebounced()" autocomplete="off" spellcheck="false" aria-label="Buscar contatos">
             </div>
-            <div id="contacts-list" class="contacts-scroll"></div>
+
+            <div id="contacts-list" class="contacts-scroll" role="list" aria-label="Lista de contatos"></div>
         </aside>
 
-        <main class="chat-view">
-            <header id="chat-header" class="chat-header hidden">
-                <button class="btn-icon mobile-only" type="button" onclick="backToContacts()">⬅️</button>
-                <div id="chat-user-avatar" class="avatar">U</div>
+        <main class="chat-view" role="main" aria-label="Área de chat">
+            <header id="chat-header" class="chat-header hidden" role="banner" aria-label="Cabeçalho do chat">
+                <button class="btn-icon mobile-only" type="button" aria-label="Voltar aos contatos" onclick="backToContacts()">⬅️</button>
+
+                <div id="chat-user-avatar" class="avatar" aria-hidden="true">U</div>
+
                 <div class="chat-user-info">
                     <h3 id="chat-user-name">Contato</h3>
-                    <span id="chat-user-status" class="status-indicator">Offline</span>
+                    <span id="chat-user-status" class="status-indicator" aria-live="polite">Offline</span>
                 </div>
+
                 <div class="chat-actions-top">
-                    <button class="btn-icon" type="button" title="Apagar conversa" onclick="deleteCurrentConversation()">🗑️</button>
-                    <button class="btn-call" type="button" title="Chamada" onclick="startCall()">📞</button>
+                    <button class="btn-icon" type="button" title="Apagar conversa" aria-label="Apagar conversa" onclick="deleteCurrentConversation()">🗑️</button>
+                    <button class="btn-icon" type="button" title="Iniciar chamada" aria-label="Iniciar chamada de voz" onclick="startCall()">📞</button>
                 </div>
             </header>
 
-            <div id="empty-state" class="empty-state">
-                <div class="empty-icon">🎧</div>
+            <div id="empty-state" class="empty-state" role="status" aria-live="polite">
+                <div class="empty-icon" aria-hidden="true">🎧</div>
                 <h2>Canal Conectado</h2>
                 <p>Selecione um membro para conversar, gravar áudio ou iniciar chamada.</p>
             </div>
 
-            <div id="chat-messages" class="chat-messages hidden"></div>
+            <div id="chat-messages" class="chat-messages hidden" role="log" aria-live="polite" aria-label="Mensagens do chat"></div>
 
-            <!-- Reply bar -->
-            <div id="reply-bar" class="reply-bar hidden">
+            <div id="reply-bar" class="reply-bar hidden" role="status" aria-label="Respondendo a mensagem">
                 <div class="reply-bar-info">
-                    <span class="reply-bar-user"></span>
+                    <strong class="reply-bar-user"></strong>
                     <span class="reply-bar-text"></span>
                 </div>
-                <button type="button" class="btn-icon" onclick="clearReply()">✕</button>
+                <button type="button" class="btn-icon" title="Limpar resposta" aria-label="Cancelar resposta" onclick="clearReply()">✕</button>
             </div>
 
-            <!-- Recording indicator -->
-            <div id="recording-bar" class="recording-bar hidden">
-                <span class="rec-dot"></span>
+            <div id="recording-bar" class="recording-bar hidden" role="status" aria-live="assertive" aria-label="Gravando mensagem de áudio">
+                <span class="rec-dot" aria-hidden="true"></span>
                 <span>Gravando...</span>
-                <button type="button" class="btn-secondary" onclick="cancelVoiceRecord()">Cancelar</button>
-                <button type="button" class="btn-primary" onclick="stopVoiceRecord()">Enviar</button>
+                <button type="button" class="btn-secondary" aria-label="Cancelar gravação" onclick="cancelVoiceRecord()">Cancelar</button>
+                <button type="button" class="btn-primary" aria-label="Enviar gravação" onclick="stopVoiceRecord()">Enviar</button>
             </div>
 
-            <footer id="chat-input-area" class="chat-input-area hidden">
-                <label for="file-input" class="btn-attach" title="Anexar">📎</label>
-                <input type="file" id="file-input" class="hidden" accept="image/*,audio/*,video/*,.pdf,.doc,.docx,.txt,.zip" onchange="handleFileSelect(event)">
-                <button id="btn-record" type="button" class="btn-record" title="Gravar áudio" onclick="isRecording ? stopVoiceRecord() : startVoiceRecord()">🎤</button>
-                <input type="text" id="message-input" placeholder="Mensagem..." onkeydown="handleKeyPress(event)" autocomplete="off" maxlength="2000">
-                <button class="btn-primary" type="button" onclick="sendMessage()">Enviar</button>
+            <footer id="chat-input-area" class="chat-input-area hidden" role="region" aria-label="Área de entrada de mensagem">
+                <label for="file-input" class="btn-attach" title="Anexar arquivo" aria-label="Anexar arquivo">📎</label>
+                <input type="file" id="file-input" class="hidden" accept="image/*,audio/*,video/*,.pdf,.doc,.docx,.txt,.zip" onchange="handleFileSelect(event)" aria-label="Selecionar arquivo para enviar">
+
+                <button id="btn-record" type="button" class="btn-record" title="Gravar áudio" aria-label="Gravar mensagem de áudio" onclick="isRecording ? stopVoiceRecord() : startVoiceRecord()">🎤</button>
+
+                <input type="text" id="message-input" placeholder="Mensagem..." onkeydown="handleKeyPress(event)" autocomplete="off" maxlength="2000" aria-label="Digitar mensagem">
+
+                <button class="btn-primary" type="button" aria-label="Enviar mensagem" onclick="sendMessage()">Enviar</button>
             </footer>
         </main>
     </div>
 
-    <!-- Message action menu (long-press) -->
-    <div id="msg-action-menu" class="msg-action-menu hidden">
-        <button type="button" data-action="reply" onclick="handleMenuAction('reply')">↩️ Responder</button>
-        <button type="button" data-action="edit" onclick="handleMenuAction('edit')">✏️ Editar</button>
-        <button type="button" data-action="forward" onclick="handleMenuAction('forward')">↪️ Encaminhar</button>
-        <button type="button" data-action="delete" onclick="handleMenuAction('delete')">🗑️ Apagar</button>
-        <button type="button" onclick="closeMessageMenu()">Fechar</button>
+    <!-- MENU -->
+    <div id="msg-action-menu" class="msg-action-menu hidden" role="menu" aria-label="Ações da mensagem">
+        <button type="button" data-action="reply" onclick="handleMenuAction('reply')" role="menuitem">↩️ Responder</button>
+        <button type="button" data-action="edit" onclick="handleMenuAction('edit')" role="menuitem">✏️ Editar</button>
+        <button type="button" data-action="forward" onclick="handleMenuAction('forward')" role="menuitem">↪️ Encaminhar</button>
+        <button type="button" data-action="delete" onclick="handleMenuAction('delete')" role="menuitem">🗑️ Apagar</button>
+        <button type="button" onclick="closeMessageMenu()" role="menuitem">Fechar</button>
     </div>
 
-    <!-- CALL -->
-    <div id="call-modal" class="call-modal hidden">
-        <audio id="remote-audio" autoplay playsinline></audio>
+    <!-- MODAL CALL -->
+    <div id="call-modal" class="call-modal hidden" role="dialog" aria-labelledby="call-user-name" aria-modal="true">
+        <audio id="remote-audio" autoplay playsinline style="display:none;"></audio>
+
         <div class="call-content">
-            <div id="call-avatar" class="call-avatar-pulse">📞</div>
+            <div id="call-avatar" class="call-avatar-pulse" aria-hidden="true">📞</div>
             <h2 id="call-user-name">Usuário</h2>
-            <div id="call-status-text" class="call-status">Conectando...</div>
-            <div id="call-actions-calling" class="call-actions hidden">
-                <button class="btn-reject btn-full" type="button" onclick="endCall()">Cancelar</button>
+            <div id="call-status-text" class="call-status" role="status" aria-live="polite">Conectando...</div>
+
+            <div id="call-actions-calling" class="call-actions hidden" role="region" aria-label="Ações de chamada em andamento">
+                <button class="btn-reject btn-full" type="button" aria-label="Cancelar chamada" onclick="endCall()">Cancelar</button>
             </div>
-            <div id="call-actions-incoming" class="call-actions hidden">
-                <button class="btn-accept" type="button" onclick="acceptCall()">Atender</button>
-                <button class="btn-reject" type="button" onclick="rejectCall()">Recusar</button>
+
+            <div id="call-actions-incoming" class="call-actions hidden" role="region" aria-label="Ações de chamada recebida">
+                <button class="btn-accept" type="button" aria-label="Atender chamada" onclick="acceptCall()">Atender</button>
+                <button class="btn-reject" type="button" aria-label="Recusar chamada" onclick="rejectCall()">Recusar</button>
             </div>
-            <div id="call-actions-active" class="call-actions hidden">
-                <button id="btn-toggle-mic" class="btn-secondary" type="button" onclick="toggleMicrophone()">🎙️ Mutar (F4)</button>
-                <button class="btn-reject" type="button" onclick="endCall()">Desconectar</button>
+
+            <div id="call-actions-active" class="call-actions hidden" role="region" aria-label="Ações de chamada ativa">
+                <button id="btn-toggle-mic" class="btn-secondary" type="button" aria-label="Alternar microfone (F4)" onclick="toggleMicrophone()">🎙️ Mutar (F4)</button>
+                <button class="btn-reject" type="button" aria-label="Encerrar chamada" onclick="endCall()">Desconectar</button>
             </div>
         </div>
     </div>
 
-    <!-- SETTINGS / PROFILE -->
-    <div id="settings-modal" class="modal-overlay hidden">
+    <!-- SETTINGS -->
+    <div id="settings-modal" class="modal-overlay hidden" role="dialog" aria-labelledby="settings-title" aria-modal="true">
         <div class="modal-box settings-box">
             <header class="modal-header">
-                <h3>Configurações</h3>
-                <button class="btn-icon" type="button" onclick="hideSettings()">❌</button>
+                <h3 id="settings-title">Configurações</h3>
+                <button class="btn-icon" type="button" aria-label="Fechar configurações" onclick="hideSettings()">❌</button>
             </header>
+
             <div class="modal-body settings-scroll">
-                <section class="setting-section">
-                    <h4>Perfil</h4>
+                <section class="setting-section" aria-labelledby="profile-section">
+                    <h4 id="profile-section">Perfil</h4>
+
                     <div class="avatar-upload-box">
-                        <div id="profile-avatar-preview" class="avatar-preview" onclick="document.getElementById('profile-avatar-input').click()">📷</div>
+                        <div id="profile-avatar-preview"
+                             class="avatar-preview"
+                             role="button"
+                             tabindex="0"
+                             aria-label="Foto do perfil"
+                             onclick="document.getElementById('profile-avatar-input').click()"
+                             onkeydown="if(event.key === 'Enter') document.getElementById('profile-avatar-input').click()">
+                            📷
+                        </div>
+
                         <label for="profile-avatar-input" class="btn-avatar-select">Trocar foto</label>
-                        <input type="file" id="profile-avatar-input" accept="image/*" class="hidden" onchange="previewProfileAvatar(event)">
+                        <input type="file" id="profile-avatar-input" accept="image/*" class="hidden" onchange="previewProfileAvatar(event)" aria-label="Enviar nova foto de perfil">
                     </div>
+
                     <div class="setting-group">
-                        <label>Usuário (não editável)</label>
-                        <div id="profile-username" class="input-field readonly-field">@usuario</div>
+                        <label for="profile-username">Usuário (não editável)</label>
+                        <div id="profile-username" class="input-field readonly-field" style="cursor:default;opacity:0.7;">@usuario</div>
                     </div>
+
                     <div class="setting-group">
                         <label for="profile-displayname">Nome de exibição</label>
-                        <input type="text" id="profile-displayname" class="input-field" maxlength="30">
+                        <input type="text" id="profile-displayname" class="input-field" maxlength="30" aria-label="Nome de exibição do perfil">
                     </div>
+
                     <div class="setting-group">
                         <label for="profile-bio">Biografia</label>
-                        <textarea id="profile-bio" class="input-field" rows="3" maxlength="200" placeholder="Sobre você..."></textarea>
+                        <textarea id="profile-bio" class="input-field" rows="3" maxlength="200" placeholder="Sobre você..." aria-label="Sua biografia"></textarea>
                     </div>
-                    <button type="button" class="btn-primary btn-full" onclick="saveProfile()">Salvar perfil</button>
+
+                    <button type="button" class="btn-primary btn-full" onclick="saveProfile()" aria-label="Salvar alterações de perfil">Salvar perfil</button>
                 </section>
 
-                <section class="setting-section">
-                    <h4>Microfone</h4>
+                <section class="setting-section" aria-labelledby="mic-section">
+                    <h4 id="mic-section">Microfone</h4>
                     <div class="setting-group">
                         <label for="mic-select">Dispositivo de entrada</label>
-                        <select id="mic-select" class="input-field" onchange="onMicChange()"></select>
+                        <select id="mic-select" class="input-field" onchange="onMicChange()" aria-label="Selecionar microfone"></select>
                     </div>
+
                     <p style="font-size:12px;color:var(--text-muted);margin-top:6px;">
-                        Em alguns celulares o navegador pode listar o microfone apenas após você permitir o acesso.
+                        ℹ️ Em alguns celulares o navegador pode listar o microfone apenas após você permitir o acesso.
                     </p>
                 </section>
 
-                <section class="setting-section">
-                    <h4>Processamento de Áudio (gravação)</h4>
+                <section class="setting-section" aria-labelledby="audio-section">
+                    <h4 id="audio-section">Processamento de Áudio (gravação)</h4>
+
                     <div class="setting-group">
-                        <label for="audio-volume">Volume / Boost: <span id="audio-volume-label">100%</span></label>
-                        <input type="range" id="audio-volume" min="20" max="500" step="10" value="100" oninput="onAudioPrefChange()">
+                        <label for="audio-volume">Volume / Boost: <span id="audio-volume-label" aria-live="polite">100%</span></label>
+                        <input type="range" id="audio-volume" min="20" max="500" step="10" value="100" oninput="onAudioPrefChange()" aria-label="Ajustar volume e boost">
                     </div>
+
                     <div class="setting-group row">
-                        <label><input type="checkbox" id="audio-noise" checked onchange="onAudioPrefChange()"> Redução de ruído</label>
+                        <label>
+                            <input type="checkbox" id="audio-noise" checked onchange="onAudioPrefChange()" aria-label="Ativar redução de ruído">
+                            Redução de ruído
+                        </label>
                     </div>
+
                     <div class="setting-group row">
-                        <label><input type="checkbox" id="audio-smooth" checked onchange="onAudioPrefChange()"> Suavização de voz</label>
+                        <label>
+                            <input type="checkbox" id="audio-smooth" checked onchange="onAudioPrefChange()" aria-label="Ativar suavização de voz">
+                            Suavização de voz
+                        </label>
                     </div>
                 </section>
 
-                <section class="setting-section">
-                    <h4>Aparência</h4>
-                    <button type="button" class="btn-secondary btn-full" onclick="toggleTheme()">Alternar tema claro/escuro</button>
+                <section class="setting-section" aria-labelledby="appearance-section">
+                    <h4 id="appearance-section">Aparência</h4>
+                    <button type="button" class="btn-secondary btn-full" onclick="toggleTheme()" aria-label="Alternar tema claro e escuro">Alternar tema claro/escuro</button>
                 </section>
             </div>
+
             <footer class="modal-footer">
-                <button class="btn-primary btn-full" type="button" onclick="hideSettings()">Fechar</button>
+                <button class="btn-primary btn-full" type="button" aria-label="Fechar configurações" onclick="hideSettings()">Fechar</button>
             </footer>
         </div>
     </div>
 
-    <!-- Scripts (ordem importante) -->
     <script src="updater.js" defer></script>
     <script src="core.js" defer></script>
     <script src="chat.js" defer></script>
