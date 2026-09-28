@@ -211,7 +211,7 @@ function renderChatHistory(messages) {
 function appendChatMessage(opts) {
   const {
     id, sender, content, msg_type = 'text', media_meta,
-    isMe, deleted_for_all, reply_preview, edited, timestamp
+    isMe, deleted_for_all, reply_preview, edited, timestamp, status = 'sent'
   } = opts;
 
   const box = document.getElementById('chat-messages');
@@ -228,12 +228,79 @@ function appendChatMessage(opts) {
   div.dataset.type = msg_type;
 
   let html = '';
+
+  // 1. Citação de Resposta (Reply Quote)
   if (reply_preview) {
     html += '<div class="reply-quote">' +
       '<span class="rq-user">' + escapeHTML(reply_preview.sender || '') + '</span>' +
       '<span class="rq-text">' + escapeHTML(reply_preview.content || '') + '</span>' +
       '</div>';
   }
+
+  // 2. Conteúdo da Mensagem (Apagada vs Tipos de Mídia)
+  if (deleted_for_all) {
+    html += '<div class="message-content deleted-msg">' +
+      '<i>🚫</i> <span>Esta mensagem foi apagada</span>' +
+      '</div>';
+  } else {
+    if (msg_type === 'image' && content) {
+      html += '<div class="media-bubble">' +
+        '<img src="' + escapeHTML(content) + '" alt="Imagem" onclick="openMediaModal(this.src)" loading="lazy">' +
+        '</div>';
+    } else if (msg_type === 'audio' && content) {
+      html += '<div class="media-bubble audio-bubble">' +
+        '<audio controls src="' + escapeHTML(content) + '"></audio>' +
+        '</div>';
+    } else if (msg_type === 'video' && content) {
+      html += '<div class="media-bubble">' +
+        '<video controls src="' + escapeHTML(content) + '"></video>' +
+        '</div>';
+    } else if (msg_type === 'file' || msg_type === 'document') {
+      const fileName = (media_meta && media_meta.name) ? media_meta.name : 'Arquivo';
+      html += '<div class="file-bubble">' +
+        '<a href="' + escapeHTML(content) + '" target="_blank" download="' + escapeHTML(fileName) + '">' +
+        '📄 ' + escapeHTML(fileName) +
+        '</a>' +
+        '</div>';
+    } else {
+      // Padrão: Mensagem de Texto
+      html += '<div class="message-text">' + escapeHTML(content || '') + '</div>';
+    }
+  }
+
+  // 3. Rodapé da Mensagem (Horário, Tag de Editada e Status)
+  const timeFormatted = typeof formatTimestamp === 'function' 
+    ? formatTimestamp(timestamp || Date.now()) 
+    : new Date(timestamp || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  html += '<div class="message-meta">';
+  if (edited && !deleted_for_all) {
+    html += '<span class="edited-tag">editada</span> ';
+  }
+  html += '<span class="msg-time">' + escapeHTML(timeFormatted) + '</span>';
+
+  if (isMe && !deleted_for_all) {
+    const statusIcon = status === 'read' ? '✓✓' : '✓';
+    const statusClass = status === 'read' ? 'read' : 'sent';
+    html += ' <span class="msg-status ' + statusClass + '">' + statusIcon + '</span>';
+  }
+  html += '</div>';
+
+  div.innerHTML = html;
+
+  // 4. Menu de Contexto (Clique com botão direito / Ações da mensagem)
+  div.addEventListener('contextmenu', e => {
+    e.preventDefault();
+    if (typeof openMessageMenu === 'function') {
+      openMessageMenu(e, opts);
+    }
+  });
+
+  box.appendChild(div);
+
+  // 5. Rolar para o final da conversa
+  box.scrollTop = box.scrollHeight;
+}
 
   const safeContent = escapeAttr(content || '');
 
