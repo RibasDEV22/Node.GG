@@ -696,9 +696,10 @@ document.addEventListener('DOMContentLoaded', () => {
   registerServiceWorker();
   connectWebSocket();
 
-  if (getCookie('zap_notif') === '1' || Notification.permission === 'granted') {
-    requestNotificationPermission();
-  }
+if (getCookie('zap_notif') === '1' || Notification.permission === 'granted') {
+  requestNotificationPermission();
+}
+});
 
   document.addEventListener('click', e => {
     if (!e.target.closest('#msg-action-menu') && !e.target.closest('.message')) {
