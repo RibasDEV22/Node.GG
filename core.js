@@ -433,33 +433,26 @@ function handleServerMessage(data) {
       requestNotificationPermission();
       break;
 
-    // FIX #3.0: Novo case para reconnect com session token
-    case 'reconnect_success':
+    // FIX #5.0: Reconexão com token - REMOVER DUPLICATA
+    case 'reconnect_session':
       console.log('[WS] Reconexão com token bem-sucedida');
       currentUser = data.user;
-      currentSessionToken = data.sessionToken;
-      localStorage.setItem(SESSION_STORAGE, data.sessionToken);
+      if (data.sessionToken) {
+        currentSessionToken = data.sessionToken;
+        localStorage.setItem(SESSION_STORAGE, data.sessionToken);
+      }
       hideSplashScreen();
       showMainScreen();
       renderUserProfile();
       sendWS({ type: 'get_contacts' });
       sendWS({ type: 'get_announcements' });
       requestNotificationPermission();
+      flushMessageQueue();
       break;
 
     case 'auth_error':
       hideSplashScreen();
       showAuthError(data.message || 'Erro de autenticação');
-      break;
-
-    case 'reconnect_success':
-      console.log('[WS] Reconexão com token bem-sucedida');
-      currentUser = data.user;
-      hideSplashScreen();
-      showMainScreen();
-      renderUserProfile();
-      sendWS({ type: 'get_contacts' });
-      sendWS({ type: 'get_announcements' });
       break;
 
     case 'contacts_list':
@@ -558,6 +551,18 @@ function handleServerMessage(data) {
       break;
     case 'call_ended':
       if (typeof cleanupCall === 'function') cleanupCall();
+      break;
+
+    case 'reaction_updated':
+      if (typeof handleReactionUpdate === 'function') {
+        handleReactionUpdate(data);
+      }
+      break;
+
+    case 'reaction_removed':
+      if (typeof handleReactionRemove === 'function') {
+        handleReactionRemove(data);
+      }
       break;
 
     default:
@@ -696,10 +701,9 @@ document.addEventListener('DOMContentLoaded', () => {
   registerServiceWorker();
   connectWebSocket();
 
-if (getCookie('zap_notif') === '1' || Notification.permission === 'granted') {
-  requestNotificationPermission();
-}
-});
+  if (getCookie('zap_notif') === '1' || Notification.permission === 'granted') {
+    requestNotificationPermission();
+  }
 
   document.addEventListener('click', e => {
     if (!e.target.closest('#msg-action-menu') && !e.target.closest('.message')) {
