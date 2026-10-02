@@ -1,1 +1,691 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Node.GG - Login & Register</title>
+    <!-- Favicon referencing local icon.png with icon.ico fallback -->
+    <link rel="icon" type="image/png" href="icon.png" onerror="this.href='icon.ico'">
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* ==========================================================================
+           1. CSS VARIABLES & THEMES
+           ========================================================================== */
+        :root {
+            /* Brand Green Accent */
+            --primary: #00E676;
+            --primary-hover: #00C853;
+            --primary-glow: rgba(0, 230, 118, 0.25);
 
+            /* Theme Dark Default Variables */
+            --bg-color: #0F1215;
+            --card-bg: rgba(22, 27, 32, 0.88);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --text-main: #FFFFFF;
+            --text-muted: #8E9297;
+            --input-bg: #1A1F24;
+            --input-border: rgba(255, 255, 255, 0.1);
+            --input-focus: var(--primary);
+            --shadow-color: rgba(0, 0, 0, 0.5);
+            --window-bar-bg: #161B20;
+        }
+
+        /* Light Theme Overrides (Toggled via hidden CSS checkbox) */
+        #theme-toggle:checked ~ .app-viewport {
+            --bg-color: #EBF0F3;
+            --card-bg: rgba(255, 255, 255, 0.92);
+            --card-border: rgba(0, 0, 0, 0.08);
+            --text-main: #121517;
+            --text-muted: #64748B;
+            --input-bg: #F1F5F9;
+            --input-border: rgba(0, 0, 0, 0.12);
+            --input-focus: #00C853;
+            --shadow-color: rgba(0, 0, 0, 0.08);
+            --window-bar-bg: #E2E8F0;
+        }
+
+        /* ==========================================================================
+           2. BASE & RESET STYLES
+           ========================================================================== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        .app-viewport {
+            width: 100%;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background-color: var(--bg-color);
+            position: relative;
+        }
+
+        /* Ambient Background Mesh Glow */
+        .ambient-glow {
+            position: absolute;
+            width: 550px;
+            height: 550px;
+            background: radial-gradient(circle, var(--primary-glow) 0%, rgba(0,0,0,0) 70%);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 0;
+            pointer-events: none;
+            opacity: 0.6;
+        }
+
+        /* ==========================================================================
+           3. TOP CONTROL BAR (Pure CSS Theme Switcher Button)
+           ========================================================================== */
+        #theme-toggle,
+        input[name="form-toggle"] {
+            display: none;
+        }
+
+        .top-controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+        }
+
+        .theme-btn-label {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            color: var(--text-main);
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 12px var(--shadow-color);
+            user-select: none;
+        }
+
+        .theme-btn-label:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .icon-sun { display: none; }
+        .icon-moon { display: inline-block; }
+
+        #theme-toggle:checked ~ .app-viewport .icon-sun { display: inline-block; }
+        #theme-toggle:checked ~ .app-viewport .icon-moon { display: none; }
+
+        /* ==========================================================================
+           4. MAIN CONTAINER & WINDOW FRAME
+           ========================================================================== */
+        .app-window {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            max-width: 880px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 20px 50px var(--shadow-color);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Windows Titlebar Frame */
+        .window-titlebar {
+            height: 38px;
+            background: var(--window-bar-bg);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            border-bottom: 1px solid var(--card-border);
+            user-select: none;
+        }
+
+        .window-title {
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .window-title img {
+            width: 16px;
+            height: 16px;
+            object-fit: contain;
+            border-radius: 3px;
+        }
+
+        .window-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .win-btn {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            opacity: 0.85;
+        }
+        .win-close { background: #FF5F56; }
+        .win-min { background: #FFBD2E; }
+        .win-max { background: #27C93F; }
+
+        .app-body {
+            display: flex;
+            min-height: 520px;
+        }
+
+        /* ==========================================================================
+           5. BRAND / SIDEBAR SECTION
+           ========================================================================== */
+        .brand-section {
+            flex: 1;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            border-right: 1px solid var(--card-border);
+            background: linear-gradient(135deg, rgba(0, 230, 118, 0.04) 0%, rgba(0,0,0,0) 100%);
+        }
+
+        .brand-header {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .brand-icon-small {
+            width: 42px;
+            height: 42px;
+            object-fit: contain;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px var(--primary-glow);
+        }
+
+        .brand-title {
+            font-size: 26px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+
+        .brand-subtitle {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        /* Large App Icon Display Area */
+        .mascot-wrapper {
+            margin: auto 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            padding: 20px 0;
+        }
+
+        .app-icon-main {
+            width: 130px;
+            height: 130px;
+            object-fit: contain;
+            border-radius: 28px;
+            margin-bottom: 20px;
+            filter: drop-shadow(0 10px 25px var(--primary-glow));
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .app-icon-main:hover {
+            transform: scale(1.04);
+        }
+
+        .mascot-tagline {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .mascot-desc {
+            font-size: 13px;
+            color: var(--text-muted);
+            max-width: 260px;
+            line-height: 1.5;
+        }
+
+        /* QR Code Quick Connect Area */
+        .qr-section {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 14px;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 12px;
+            margin-top: 10px;
+        }
+
+        .qr-code {
+            width: 52px;
+            height: 52px;
+            border-radius: 8px;
+            background: #FFFFFF;
+            padding: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .qr-text {
+            font-size: 12px;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+
+        .qr-text strong {
+            color: var(--text-main);
+            display: block;
+            margin-bottom: 2px;
+        }
+
+        /* ==========================================================================
+           6. FORM SECTION & TABS
+           ========================================================================== */
+        .form-section {
+            width: 420px;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .form-tabs {
+            display: flex;
+            background: var(--input-bg);
+            padding: 4px;
+            border-radius: 10px;
+            margin-bottom: 28px;
+            border: 1px solid var(--input-border);
+        }
+
+        .tab-btn {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            user-select: none;
+        }
+
+        /* CSS Tab Switcher logic */
+        #tab-login:checked ~ .app-viewport .tab-login-label,
+        #tab-register:checked ~ .app-viewport .tab-register-label {
+            background: var(--card-bg);
+            color: var(--primary);
+            box-shadow: 0 2px 8px var(--shadow-color);
+        }
+
+        .form-container {
+            display: none;
+        }
+
+        #tab-login:checked ~ .app-viewport .login-form-wrapper,
+        #tab-register:checked ~ .app-viewport .register-form-wrapper {
+            display: block;
+            animation: fadeIn 0.25s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .input-group {
+            margin-bottom: 18px;
+        }
+
+        .input-label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 12px 16px;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 10px;
+            color: var(--text-main);
+            font-size: 14px;
+            outline: none;
+        }
+
+        .input-field:focus {
+            border-color: var(--input-focus);
+            box-shadow: 0 0 0 3px var(--primary-glow);
+        }
+
+        .input-field::placeholder {
+            color: var(--text-muted);
+            opacity: 0.6;
+        }
+
+        .form-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            font-size: 13px;
+        }
+
+        .forgot-link {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .forgot-link:hover {
+            text-decoration: underline;
+        }
+
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-muted);
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .checkbox-container input {
+            accent-color: var(--primary);
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 14px;
+            background: var(--primary);
+            color: #051A0E;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 16px var(--primary-glow);
+            transition: transform 0.1s ease, background-color 0.2s ease;
+        }
+
+        .btn-submit:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+        }
+
+        .form-footer {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .form-footer label {
+            color: var(--primary);
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .form-footer label:hover {
+            text-decoration: underline;
+        }
+
+        /* ==========================================================================
+           7. RESPONSIVE DESIGN (Mobile Adaptivity)
+           ========================================================================== */
+        @media (max-width: 820px) {
+            .app-window {
+                max-width: 420px;
+                border-radius: 20px;
+            }
+
+            .app-body {
+                flex-direction: column;
+            }
+
+            .brand-section {
+                border-right: none;
+                border-bottom: 1px solid var(--card-border);
+                padding: 24px 24px 16px 24px;
+                align-items: center;
+                text-align: center;
+            }
+
+            .brand-header {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .mascot-wrapper, .qr-section {
+                display: none; /* Hide heavy graphics on small screens */
+            }
+
+            .form-section {
+                width: 100%;
+                padding: 28px 24px;
+            }
+
+            .window-titlebar {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Hidden Driver Checkboxes for Pure CSS Theme & Tabs -->
+    <input type="checkbox" id="theme-toggle">
+    <input type="radio" id="tab-login" name="form-toggle" checked>
+    <input type="radio" id="tab-register" name="form-toggle">
+
+    <div class="app-viewport">
+        <!-- Ambient Green Glow -->
+        <div class="ambient-glow"></div>
+
+        <!-- Theme Toggle Button -->
+        <div class="top-controls">
+            <label for="theme-toggle" class="theme-btn-label" title="Alternar Tema">
+                <svg class="icon-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                </svg>
+                <svg class="icon-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="5"></circle>
+                    <line x1="12" y1="1" x2="12" y2="3"></line>
+                    <line x1="12" y1="21" x2="12" y2="23"></line>
+                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                    <line x1="1" y1="12" x2="3" y2="12"></line>
+                    <line x1="21" y1="12" x2="23" y2="12"></line>
+                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                </svg>
+                <span>Tema</span>
+            </label>
+        </div>
+
+        <!-- Main Window Component -->
+        <div class="app-window">
+            
+            <!-- Window Bar -->
+            <div class="window-titlebar">
+                <div class="window-title">
+                    <picture>
+                        <source srcset="icon.png" type="image/png">
+                        <img src="icon.ico" alt="Node Icon" onerror="this.src='icon.png'">
+                    </picture>
+                    Node.GG - Desktop
+                </div>
+                <div class="window-controls">
+                    <span class="win-btn win-min"></span>
+                    <span class="win-btn win-max"></span>
+                    <span class="win-btn win-close"></span>
+                </div>
+            </div>
+
+            <div class="app-body">
+                
+                <!-- Left Brand Section -->
+                <div class="brand-section">
+                    <div class="brand-header">
+                        <!-- Header App Icon -->
+                        <picture>
+                            <source srcset="icon.png" type="image/png">
+                            <img src="icon.ico" alt="Node Icon" class="brand-icon-small" onerror="this.src='icon.png'">
+                        </picture>
+                        <div>
+                            <div class="brand-title">Node<span style="color:var(--primary)">.GG</span></div>
+                            <div class="brand-subtitle">Voz, Chat & Comunidades</div>
+                        </div>
+                    </div>
+
+                    <!-- Main App Icon Graphic Area -->
+                    <div class="mascot-wrapper">
+                        <picture>
+                            <source srcset="icon.png" type="image/png">
+                            <img src="icon.ico" alt="Node App Icon" class="app-icon-main" onerror="this.src='icon.png'">
+                        </picture>
+                        <div class="mascot-tagline">Conecte-se com o seu squad</div>
+                        <div class="mascot-desc">Chamadas de alta qualidade e mensagens em tempo real no PC e Mobile.</div>
+                    </div>
+
+                    <!-- Fast QR Scan Login -->
+                    <div class="qr-section">
+                        <div class="qr-code">
+                            <svg viewBox="0 0 24 24" width="44" height="44" fill="none" stroke="#121517" stroke-width="2">
+                                <path d="M3 3h6v6H3zM15 3h6v6h-6zM3 15h6v6H3zM15 15h3v3h-3zM18 18h3v3h-3zM15 18h3v3h-3zM18 15h3v3h-3z"/>
+                            </svg>
+                        </div>
+                        <div class="qr-text">
+                            <strong>Entrar via QR Code</strong>
+                            Escaneie pelo aplicativo mobile para entrar instantaneamente.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Form Section -->
+                <div class="form-section">
+                    
+                    <div class="form-tabs">
+                        <label for="tab-login" class="tab-btn tab-login-label">Entrar</label>
+                        <label for="tab-register" class="tab-btn tab-register-label">Criar Conta</label>
+                    </div>
+
+                    <!-- Login Form -->
+                    <div class="form-container login-form-wrapper">
+                        <form onsubmit="event.preventDefault();">
+                            <div class="input-group">
+                                <label class="input-label">E-mail ou Telefone</label>
+                                <input type="text" class="input-field" placeholder="seuemail@exemplo.com" required>
+                            </div>
+
+                            <div class="input-group">
+                                <label class="input-label">Senha</label>
+                                <input type="password" class="input-field" placeholder="••••••••••••" required>
+                            </div>
+
+                            <div class="form-row">
+                                <label class="checkbox-container">
+                                    <input type="checkbox" checked>
+                                    <span>Lembrar de mim</span>
+                                </label>
+                                <a href="#" class="forgot-link">Esqueceu a senha?</a>
+                            </div>
+
+                            <button type="submit" class="btn-submit">Entrar no Node</button>
+                        </form>
+
+                        <div class="form-footer">
+                            Não tem uma conta? <label for="tab-register">Registre-se agora</label>
+                        </div>
+                    </div>
+
+                    <!-- Registration Form -->
+                    <div class="form-container register-form-wrapper">
+                        <form onsubmit="event.preventDefault();">
+                            <div class="input-group">
+                                <label class="input-label">Nome de Usuário</label>
+                                <input type="text" class="input-field" placeholder="ex: jaguaringa_99" required>
+                            </div>
+
+                            <div class="input-group">
+                                <label class="input-label">E-mail</label>
+                                <input type="email" class="input-field" placeholder="seuemail@exemplo.com" required>
+                            </div>
+
+                            <div class="input-group">
+                                <label class="input-label">Senha</label>
+                                <input type="password" class="input-field" placeholder="Crie uma senha forte" required>
+                            </div>
+
+                            <div class="form-row">
+                                <label class="checkbox-container">
+                                    <input type="checkbox" required>
+                                    <span>Li e aceito os <a href="#" class="forgot-link">Termos</a></span>
+                                </label>
+                            </div>
+
+                            <button type="submit" class="btn-submit">Criar Minha Conta</button>
+                        </form>
+
+                        <div class="form-footer">
+                            Já possui uma conta? <label for="tab-login">Fazer Login</label>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
