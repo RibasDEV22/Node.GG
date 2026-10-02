@@ -50,7 +50,7 @@
         <!-- Main Window Component -->
         <div class="app-window">
             
-            <!-- Window Bar (Sem os 3 círculos e maior) -->
+            <!-- Window Bar -->
             <div class="window-titlebar">
                 <div class="window-title">
                     <picture>
@@ -66,7 +66,6 @@
                 <!-- Left Brand Section -->
                 <div class="brand-section">
                     <div class="brand-header">
-                        <!-- Header App Icon -->
                         <picture>
                             <source srcset="icon.png" type="image/png">
                             <img src="icon.ico" alt="Node Icon" class="brand-icon-small" onerror="this.src='icon.png'">
@@ -109,28 +108,31 @@
                         <label for="tab-register" class="tab-btn tab-register-label">Criar Conta</label>
                     </div>
 
+                    <!-- Area Global de Mensagens de Erro/Sucesso -->
+                    <div id="auth-feedback" style="display: none; font-size: 0.85rem; padding: 10px; border-radius: 6px; margin-bottom: 12px; text-align: center;"></div>
+
                     <!-- Login Form -->
                     <div class="form-container login-form-wrapper">
-                        <form onsubmit="event.preventDefault();">
+                        <form id="form-login">
                             <div class="input-group">
-                                <label class="input-label">E-mail ou Telefone</label>
-                                <input type="text" class="input-field" placeholder="seuemail@exemplo.com" required>
+                                <label class="input-label">E-mail ou Usuário</label>
+                                <input type="text" id="login-identifier" class="input-field" placeholder="seuemail@exemplo.com ou usuário" required>
                             </div>
 
                             <div class="input-group">
                                 <label class="input-label">Senha</label>
-                                <input type="password" class="input-field" placeholder="••••••••••••" required>
+                                <input type="password" id="login-password" class="input-field" placeholder="••••••••••••" required>
                             </div>
 
                             <div class="form-row">
                                 <label class="checkbox-container">
-                                    <input type="checkbox" checked>
+                                    <input type="checkbox" id="login-remember" checked>
                                     <span>Lembrar de mim</span>
                                 </label>
                                 <a href="#" class="forgot-link">Esqueceu a senha?</a>
                             </div>
 
-                            <button type="submit" class="btn-submit">Entrar no Node</button>
+                            <button type="submit" id="btn-login-submit" class="btn-submit">Entrar no Node</button>
                         </form>
 
                         <div class="form-footer">
@@ -140,30 +142,30 @@
 
                     <!-- Registration Form -->
                     <div class="form-container register-form-wrapper">
-                        <form onsubmit="event.preventDefault();">
+                        <form id="form-register">
                             <div class="input-group">
-                                <label class="input-label">Nome de Usuário</label>
-                                <input type="text" class="input-field" placeholder="ex: jaguaringa_99" required>
+                                <label class="input-label">Nome de Usuário (ID)</label>
+                                <input type="text" id="reg-username" class="input-field" placeholder="ex: jaguaringa_99" required>
                             </div>
 
                             <div class="input-group">
                                 <label class="input-label">E-mail</label>
-                                <input type="email" class="input-field" placeholder="seuemail@exemplo.com" required>
+                                <input type="email" id="reg-email" class="input-field" placeholder="seuemail@exemplo.com" required>
                             </div>
 
                             <div class="input-group">
                                 <label class="input-label">Senha</label>
-                                <input type="password" class="input-field" placeholder="Crie uma senha forte" required>
+                                <input type="password" id="reg-password" class="input-field" placeholder="Crie uma senha forte" required>
                             </div>
 
                             <div class="form-row">
                                 <label class="checkbox-container">
-                                    <input type="checkbox" required>
+                                    <input type="checkbox" id="reg-terms" required>
                                     <span>Li e aceito os <a href="#" class="forgot-link">Termos</a></span>
                                 </label>
                             </div>
 
-                            <button type="submit" class="btn-submit">Criar Minha Conta</button>
+                            <button type="submit" id="btn-register-submit" class="btn-submit">Criar Minha Conta</button>
                         </form>
 
                         <div class="form-footer">
@@ -175,5 +177,8 @@
             </div>
         </div>
     </div>
+
+    <!-- Script da Aplicação -->
+    <script src="./login.js"></script>
 </body>
 </html>
