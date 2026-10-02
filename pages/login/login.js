@@ -1,118 +1,257 @@
-const API_URL = 'https://node-server-b8j3.onrender.com';
+const SERVER_URL = 'https://node-server-b8j3.onrender.com';
 
-// Elementos do DOM
+let socket = null;
+let currentAction = null;
+
 const formLogin = document.getElementById('form-login');
 const formRegister = document.getElementById('form-register');
-
 const feedbackBox = document.getElementById('auth-feedback');
 const tabLogin = document.getElementById('tab-login');
 const tabRegister = document.getElementById('tab-register');
 
-// Limpa mensagens de erro/sucesso ao alternar entre abas
 tabLogin.addEventListener('change', clearFeedback);
 tabRegister.addEventListener('change', clearFeedback);
 
 // ==========================================
-// 1. PROCESSAR LOGIN
+// CONEXÃO WEBSOCKET (CORRIGIDA)
 // ==========================================
+
+function getWebSocketURL() {
+    // Converte HTTPS para WSS automaticamente
+    const protocol = SERVER_URL.startsWith('https://') ? 'wss://' : 'ws://';
+    const url = SERVER_URL.replace(/^https?:\/\//, '');
+    return protocol + url;
+}
+
+function connectSocket() {
+    return new Promise((resolve, reject) => {
+        if (socket && socket.readyState === WebSocket.OPEN) {
+            resolve(socket);
+            return;
+        }
+
+        try {
+            const wsURL = getWebSocketURL();
+            console.log('[WS] Conectando a:', wsURL);
+            
+            socket = new WebSocket(wsURL);
+            socket.onopen = () => {
+                console.log('[WS] ✅ Conectado com sucesso!');
+                resolve(socket);
+            };
+
+            socket.onerror = (err) => {
+                console.error('[WS] ❌ Erro de conexão:', err);
+                reject(new Error('Falha ao conectar com o servidor. Verifique se está online.'));
+            };
+
+            socket.onmessage = handleSocketMessage;
+
+            socket.onclose = () => {
+                console.log('[WS] Conexão encerrada');
+                socket = null;
+            };
+
+            // Timeout de 10 segundos
+            setTimeout(() => {
+                if (socket && socket.readyState !== WebSocket.OPEN) {
+                    reject(new Error('Timeout: Servidor não respondeu.'));
+                }
+            }, 10000);
+
+        } catch (err) {
+            console.error('[WS] Erro ao criar socket:', err);
+            reject(err);
+        }
+    });
+}
+
+// ==========================================
+// TRATAMENTO DAS RESPOSTAS DO SERVIDOR
+// ==========================================
+
+function handleSocketMessage(event) {
+    try {
+        const data = JSON.parse(event.data);
+        console.log('[WS] 📨 Mensagem:', data.type);
+
+        if (data.type === 'auth_success') {
+            handleAuthSuccess(data);
+            return;
+        }
+
+        if (data.type === 'auth_error') {
+            handleAuthError(data);
+            return;
+        }
+
+        if (data.type === 'maintenance_active') {
+            handleMaintenance(data);
+            return;
+        }
+    } catch (err) {
+        console.error('[WS] Erro ao processar mensagem:', err);
+    }
+}
+
+function handleAuthSuccess(data) {
+    const btn = currentAction === 'login'
+        ? document.getElementById('btn-login-submit')
+        : document.getElementById('btn-register-submit');
+
+    const user = data.user || {};
+    
+    // Salva token de sessão
+    if (user.sessionToken) {
+        localStorage.setItem('sessionToken', user.sessionToken);
+        console.log('[AUTH] 💾 Token salvo:', user.sessionToken.substring(0, 8) + '...');
+    }
+
+    // Salva dados do usuário
+    if (user) {
+        localStorage.setItem('user_data', JSON.stringify(user));
+        console.log('[AUTH] ✅ Usuário:', user.username);
+    }
+
+    const msg = currentAction === 'login'
+        ? 'Login realizado com sucesso! ✅ Redirecionando...'
+        : 'Conta criada com sucesso! ✅ Redirecionando...';
+
+    showFeedback(msg, 'success');
+    setLoading(btn, false, currentAction === 'login' ? 'Entrar no Node' : 'Criar Minha Conta');
+
+    setTimeout(() => {
+        window.location.href = '../chat/';
+    }, 1200);
+}
+
+function handleAuthError(data) {
+    const btn = currentAction === 'login'
+        ? document.getElementById('btn-login-submit')
+        : document.getElementById('btn-register-submit');
+
+    const message = data.message || 'Erro ao autenticar.';
+    console.error('[AUTH] ❌', message);
+    showFeedback(message, 'error');
+    setLoading(btn, false, currentAction === 'login' ? 'Entrar no Node' : 'Criar Minha Conta');
+}
+
+function handleMaintenance(data) {
+    const btn = currentAction === 'login'
+        ? document.getElementById('btn-login-submit')
+        : document.getElementById('btn-register-submit');
+
+    console.warn('[MAINT] ⚠️ Servidor em manutenção');
+    showFeedback(data.message || 'Servidor em manutenção. Tente novamente mais tarde.', 'error');
+    setLoading(btn, false, currentAction === 'login' ? 'Entrar no Node' : 'Criar Minha Conta');
+}
+
+// ==========================================
+// LOGIN
+// ==========================================
+
 formLogin.addEventListener('submit', async (e) => {
     e.preventDefault();
     clearFeedback();
 
-    const btnSubmit = document.getElementById('btn-login-submit');
     const identifier = document.getElementById('login-identifier').value.trim();
     const password = document.getElementById('login-password').value;
+    const btn = document.getElementById('btn-login-submit');
 
-    setLoading(btnSubmit, true, 'Entrando...');
+    if (!identifier || !password) {
+        showFeedback('❌ Preencha usuário/e-mail e senha.', 'error');
+        return;
+    }
+
+    currentAction = 'login';
+    setLoading(btn, true, 'Entrando...');
 
     try {
-        const response = await fetch(`${API_URL}/api/login`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ identifier, password })
-        });
+        console.log('[LOGIN] 🔐 Iniciando login para:', identifier);
+        await connectSocket();
 
-        const data = await response.json();
+        socket.send(JSON.stringify({
+            type: 'login',
+            identifier,
+            password
+        }));
 
-        if (!response.ok) {
-            throw new Error(data.message || data.error || 'Falha ao realizar login.');
-        }
-
-        // Salva credenciais localmente
-        if (data.token) {
-            localStorage.setItem('user_token', data.token);
-        }
-        if (data.user) {
-            localStorage.setItem('user_data', JSON.stringify(data.user));
-        }
-
-        showFeedback('Login realizado com sucesso! Redirecionando...', 'success');
-
-        // Redireciona para o chat
-        setTimeout(() => {
-            window.location.href = '../chat/';
-        }, 1000);
+        console.log('[LOGIN] 📤 Credenciais enviadas ao servidor');
 
     } catch (err) {
-        showFeedback(err.message, 'error');
-    } finally {
-        setLoading(btnSubmit, false, 'Entrar no Node');
+        const message = err.message || 'Erro ao conectar ao servidor.';
+        console.error('[LOGIN] ❌', message);
+        showFeedback('❌ ' + message, 'error');
+        setLoading(btn, false, 'Entrar no Node');
     }
 });
 
 // ==========================================
-// 2. PROCESSAR REGISTRO
+// REGISTRO
 // ==========================================
+
 formRegister.addEventListener('submit', async (e) => {
     e.preventDefault();
     clearFeedback();
 
-    const btnSubmit = document.getElementById('btn-register-submit');
     const username = document.getElementById('reg-username').value.trim();
     const email = document.getElementById('reg-email').value.trim();
     const password = document.getElementById('reg-password').value;
+    const terms = document.getElementById('reg-terms');
+    const btn = document.getElementById('btn-register-submit');
 
-    // displayName por padrão é o próprio username se não informado
-    const displayName = username;
+    // Validações
+    if (!username || !email || !password) {
+        showFeedback('❌ Preencha todos os campos.', 'error');
+        return;
+    }
 
-    setLoading(btnSubmit, true, 'Criando conta...');
+    if (password.length < 6) {
+        showFeedback('❌ A senha deve ter no mínimo 6 caracteres.', 'error');
+        return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        showFeedback('❌ E-mail inválido.', 'error');
+        return;
+    }
+
+    if (!terms.checked) {
+        showFeedback('❌ Você deve aceitar os termos.', 'error');
+        return;
+    }
+
+    currentAction = 'register';
+    setLoading(btn, true, 'Criando conta...');
 
     try {
-        const response = await fetch(`${API_URL}/api/register`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, email, password, displayName })
-        });
+        console.log('[REGISTER] 📝 Criando conta:', username);
+        await connectSocket();
 
-        const data = await response.json();
+        socket.send(JSON.stringify({
+            type: 'register',
+            username,
+            email,
+            password,
+            displayName: username,
+            avatar: ''
+        }));
 
-        if (!response.ok) {
-            throw new Error(data.message || data.error || 'Falha ao registrar conta.');
-        }
-
-        showFeedback('Conta criada com sucesso! Redirecionando para o chat...', 'success');
-
-        if (data.token) {
-            localStorage.setItem('user_token', data.token);
-        }
-        if (data.user) {
-            localStorage.setItem('user_data', JSON.stringify(data.user));
-        }
-
-        setTimeout(() => {
-            window.location.href = '../chat/';
-        }, 1200);
+        console.log('[REGISTER] 📤 Dados de registro enviados');
 
     } catch (err) {
-        showFeedback(err.message, 'error');
-    } finally {
-        setLoading(btnSubmit, false, 'Criar Minha Conta');
+        const message = err.message || 'Erro ao conectar ao servidor.';
+        console.error('[REGISTER] ❌', message);
+        showFeedback('❌ ' + message, 'error');
+        setLoading(btn, false, 'Criar Minha Conta');
     }
 });
 
 // ==========================================
 // FUNÇÕES AUXILIARES
 // ==========================================
+
 function showFeedback(msg, type = 'error') {
     feedbackBox.textContent = msg;
     feedbackBox.style.display = 'block';
@@ -137,3 +276,29 @@ function setLoading(button, isLoading, text) {
     button.disabled = isLoading;
     button.textContent = text;
 }
+
+// ==========================================
+// RECONEXÃO COM TOKEN SALVO (OPCIONAL)
+// ==========================================
+
+window.addEventListener('load', async () => {
+    const sessionToken = localStorage.getItem('sessionToken');
+    const userData = localStorage.getItem('user_data');
+
+    if (!sessionToken || !userData) return;
+
+    console.log('[LOAD] 🔄 Tentando reconectar com token salvo...');
+
+    try {
+        await connectSocket();
+
+        socket.send(JSON.stringify({
+            type: 'reconnect_session',
+            sessionToken
+        }));
+    } catch (err) {
+        console.warn('[LOAD] Reconexão falhou, necessário novo login:', err.message);
+        localStorage.removeItem('sessionToken');
+        localStorage.removeItem('user_data');
+    }
+});
