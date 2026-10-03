@@ -25,6 +25,39 @@ function getWebSocketURL() {
     return protocol + url;
 }
 
+// ==========================================
+// 1. TRATAMENTO DAS MENSAGENS DO SERVIDOR
+// (Defina a função PRIMEIRO)
+// ==========================================
+
+function handleSocketMessage(event) {
+    try {
+        const data = JSON.parse(event.data);
+        console.log('[WS] 📨 Mensagem recebida:', data.type);
+
+        if (data.type === 'auth_success') {
+            handleAuthSuccess(data);
+            return;
+        }
+
+        if (data.type === 'auth_error') {
+            handleAuthError(data);
+            return;
+        }
+
+        if (data.type === 'maintenance_active') {
+            handleMaintenance(data);
+            return;
+        }
+    } catch (err) {
+        console.error('[WS] Erro ao processar mensagem:', err);
+    }
+}
+
+// ==========================================
+// 2. CONEXÃO WEBSOCKET
+// ==========================================
+
 function connectSocket() {
     return new Promise((resolve, reject) => {
         if (socket && socket.readyState === WebSocket.OPEN) {
@@ -37,6 +70,7 @@ function connectSocket() {
             console.log('[WS] Conectando a:', wsURL);
             
             socket = new WebSocket(wsURL);
+            
             socket.onopen = () => {
                 console.log('[WS] ✅ Conectado com sucesso!');
                 resolve(socket);
@@ -44,9 +78,10 @@ function connectSocket() {
 
             socket.onerror = (err) => {
                 console.error('[WS] ❌ Erro de conexão:', err);
-                reject(new Error('Falha ao conectar com o servidor. Verifique se está online.'));
+                reject(new Error('Falha ao conectar com o servidor.'));
             };
 
+            // Agora handleSocketMessage já está perfeitamente definida!
             socket.onmessage = handleSocketMessage;
 
             socket.onclose = () => {
@@ -54,7 +89,6 @@ function connectSocket() {
                 socket = null;
             };
 
-            // Timeout de 10 segundos
             setTimeout(() => {
                 if (socket && socket.readyState !== WebSocket.OPEN) {
                     reject(new Error('Timeout: Servidor não respondeu.'));
