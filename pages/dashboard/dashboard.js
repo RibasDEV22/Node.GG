@@ -1,6 +1,8 @@
-// pages/dashboard/dashboard.js
 (function () {
-  const API_BASE = window.API_BASE || '/api';
+  // Aponta para o endereço real do servidor no Render
+  const SERVER_HOST = 'https://node-server-b8j3.onrender.com';
+  const API_BASE = window.API_BASE || `${SERVER_HOST}/api`;
+  
   let refreshInterval = null;
   
   const state = {
@@ -54,6 +56,7 @@
   function handleLogout() {
     if (refreshInterval) clearInterval(refreshInterval);
     localStorage.removeItem('sessionToken');
+    localStorage.removeItem('user_data');
     window.location.href = '../login/index.html';
   }
 
@@ -88,12 +91,12 @@
       }
 
       if (!res.ok) {
-        let msg = 'Erro ao carregar dados';
+        let msg = 'Erro ao carregar dados do servidor';
         try {
           const errData = await res.json();
           msg = errData.error || errData.message || msg;
         } catch (err) {
-          // noop
+          // Fallback se a resposta não for JSON
         }
         throw new Error(msg);
       }
@@ -116,7 +119,7 @@
 
   function buildUserCard(user) {
     const statusClass = user.status === 'online' ? 'online' : (user.status === 'idle' ? 'idle' : 'dnd');
-    const badge = user.badge || (user.isFriend ? 'Amigo' : 'Utilizador');
+    const badge = user.isFriend ? 'Amigo' : 'Utilizador';
     const statusText = user.bio || (user.status === 'online' ? 'Online agora' : 'Offline');
 
     let actionButtons = '';
@@ -169,7 +172,6 @@
   }
 
   function getFilteredUsers() {
-    // Pedidos pendentes recebem prioridade na aba de Pedidos
     if (state.filter === 'requests') {
       return state.friendRequests.map(r => ({
         requestId: r.id || r._id,
@@ -183,7 +185,7 @@
 
     const map = new Map();
 
-    // 1. Mapeia Amigos
+    // 1. Amigos cadastrados
     state.friends.forEach(f => {
       const uname = f.username || f.user2 || f.user1;
       if (uname && uname !== state.currentUser?.username) {
@@ -191,7 +193,7 @@
       }
     });
 
-    // 2. Mapeia Usuários Online (Merge com amigos ou cria novos)
+    // 2. Usuários online
     state.onlineUsers.forEach(u => {
       if (u.username && u.username !== state.currentUser?.username) {
         const existing = map.get(u.username) || { isFriend: false };
@@ -222,7 +224,7 @@
     if (!list.length) {
       els.usersContainer.innerHTML = `
         <div class="empty-state">
-          <div class="empty-state-title" style="color: var(--text-muted); padding: 20px 0; text-align: center;">
+          <div class="empty-state-title" style="color: var(--text-muted); padding: 30px 0; text-align: center; font-size: 0.9rem;">
             Nenhum utilizador encontrado.
           </div>
         </div>
@@ -273,17 +275,35 @@
     });
   }
 
+  function updateUserProfileUI(user) {
+    if (!user) return;
+    if (els.userDisplayName) els.userDisplayName.textContent = user.displayName || user.username || 'Utilizador';
+    if (els.userUsername) els.userUsername.textContent = `@${user.username || 'user'}`;
+    if (els.userAvatarText) els.userAvatarText.textContent = getAvatarText(user);
+  }
+
   async function loadCurrentUser() {
+    // Tenta carregar do cache do localStorage primeiro
+    const cachedUser = localStorage.getItem('user_data');
+    if (cachedUser) {
+      try {
+        state.currentUser = JSON.parse(cachedUser);
+        updateUserProfileUI(state.currentUser);
+      } catch (e) {
+        console.error('Erro ao ler cache do usuário:', e);
+      }
+    }
+
+    // Atualiza com os dados do servidor
     try {
       const res = await fetchJson(`${API_BASE}/auth/me`);
       if (res && res.user) {
         state.currentUser = res.user;
-        if (els.userDisplayName) els.userDisplayName.textContent = res.user.displayName || res.user.username;
-        if (els.userUsername) els.userUsername.textContent = `@${res.user.username}`;
-        if (els.userAvatarText) els.userAvatarText.textContent = getAvatarText(res.user);
+        localStorage.setItem('user_data', JSON.stringify(res.user));
+        updateUserProfileUI(res.user);
       }
     } catch (err) {
-      console.error('Erro ao carregar perfil:', err);
+      console.error('Erro ao validar conta com o servidor:', err);
     }
   }
 
@@ -308,7 +328,7 @@
       updateStatsUI();
       renderUsers();
     } catch (err) {
-      console.error('Erro ao atualizar dados:', err);
+      console.error('Erro ao sincronizar dados com o servidor:', err);
     }
   }
 
@@ -317,7 +337,7 @@
     els.modal.style.display = 'flex';
     if (type === 'chat') {
       if (els.modalTitle) els.modalTitle.textContent = 'Node.GG - Chat';
-      els.modalIframe.src = './chat/index.html'; // Corrigido caminho do iframe do chat
+      els.modalIframe.src = './chat/index.html';
     } else if (type === 'settings') {
       if (els.modalTitle) els.modalTitle.textContent = 'Node.GG - Configurações';
       els.modalIframe.src = '../settings/index.html';
@@ -346,12 +366,6 @@
         const tabFilter = tab.getAttribute('data-tab');
         if (tabFilter) {
           state.filter = tabFilter;
-        } else {
-          // Fallback caso não tenha data-tab
-          const label = tab.textContent.trim().toLowerCase();
-          if (label.includes('pedidos')) state.filter = 'requests';
-          else if (label.includes('online')) state.filter = 'online';
-          else state.filter = 'all';
         }
 
         renderUsers();
@@ -372,7 +386,7 @@
     await loadCurrentUser();
     await refreshAllData();
 
-    // Atualização periódica a cada 10 segundos
+    // Sincronização periódica com a API real a cada 10s
     refreshInterval = setInterval(refreshAllData, 10000);
   }
 
