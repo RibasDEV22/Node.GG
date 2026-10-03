@@ -7,16 +7,36 @@
        CONFIG
     ===================================================== */
 
+    /*
+     * O script é carregado tanto pela página standalone
+     * do chat quanto pelo dashboard.
+     *
+     * Usar a própria URL do script para calcular o login
+     * mantém o caminho correto nos dois casos.
+     */
+    const CHAT_SCRIPT =
+        document.currentScript;
+
     const CONFIG = {
-        SERVER_URL: 'https://node-server-b8j3.onrender.com',
+        SERVER_URL:
+            'https://node-server-b8j3.onrender.com',
 
-        REQUEST_TIMEOUT: 15000,
+        REQUEST_TIMEOUT:
+            15000,
 
-        POLLING_INTERVAL: 3000,
+        POLLING_INTERVAL:
+            3000,
 
-        STORAGE_KEY: 'nodegg.chat.state',
+        STORAGE_KEY:
+            'nodegg.chat.state',
 
-        LOGIN_PATH: '../../login/index.html'
+        LOGIN_PATH:
+            CHAT_SCRIPT
+                ? new URL(
+                    '../../login/index.html',
+                    CHAT_SCRIPT.src
+                ).href
+                : '../../login/index.html'
     };
 
     CONFIG.API_BASE =
@@ -48,7 +68,14 @@
 
         pollingTimer: null,
 
-        historyRequestId: 0
+        historyRequestId: 0,
+
+        /*
+         * Usado quando o dashboard manda o comando
+         * para abrir uma conversa antes do chat terminar
+         * sua inicialização.
+         */
+        pendingDashboardConversation: null
     };
 
 
@@ -57,39 +84,81 @@
     ===================================================== */
 
     const els = {
+        /*
+         * IMPORTANTE:
+         *
+         * O dashboard já possui um #search-input para
+         * pesquisar amigos.
+         *
+         * O chat standalone usa #chat-search-input.
+         *
+         * Assim o chat não interfere na busca do dashboard.
+         */
         searchInput:
-            document.getElementById('search-input'),
+            document.getElementById(
+                'chat-search-input'
+            ),
 
         conversationsList:
-            document.getElementById('conversations-list'),
+            document.getElementById(
+                'conversations-list'
+            ),
 
         chatArea:
-            document.getElementById('chat-area'),
+            document.getElementById(
+                'chat-area'
+            ),
 
         messagesContainer:
-            document.getElementById('messages-container'),
+            document.getElementById(
+                'messages-container'
+            ),
 
         chatHeader:
-            document.getElementById('chat-header'),
+            document.getElementById(
+                'chat-header'
+            ),
 
         chatAvatar:
-            document.getElementById('chat-avatar'),
+            document.getElementById(
+                'chat-avatar'
+            ),
 
         chatUsername:
-            document.getElementById('chat-username'),
+            document.getElementById(
+                'chat-username'
+            ),
 
         chatStatus:
-            document.getElementById('chat-status'),
+            document.getElementById(
+                'chat-status'
+            ),
 
         chatInputArea:
-            document.getElementById('chat-input-area'),
+            document.getElementById(
+                'chat-input-area'
+            ),
 
         messageInput:
-            document.getElementById('message-input'),
+            document.getElementById(
+                'message-input'
+            ),
 
         sendBtn:
-            document.getElementById('send-btn')
+            document.getElementById(
+                'send-btn'
+            )
     };
+
+
+    /*
+     * Detecta se o chat está sendo executado dentro
+     * do dashboard.
+     */
+    const embeddedMode =
+        !!document.getElementById(
+            'dashboard-chat-panel'
+        );
 
 
     /* =====================================================
@@ -97,13 +166,19 @@
     ===================================================== */
 
     function getSessionToken() {
-        return localStorage.getItem('sessionToken') || '';
+        return (
+            localStorage.getItem(
+                'sessionToken'
+            ) || ''
+        );
     }
 
 
     function getStoredUser() {
         const raw =
-            localStorage.getItem('user_data');
+            localStorage.getItem(
+                'user_data'
+            );
 
         if (!raw) {
             return null;
@@ -138,8 +213,12 @@
                         state.activeConversation
                 })
             );
+
         } catch {
-            // Storage indisponível. Não impede o chat.
+            /*
+             * Storage indisponível.
+             * Não impede o funcionamento do chat.
+             */
         }
     }
 
@@ -299,6 +378,7 @@
             try {
                 data =
                     await response.json();
+
             } catch {
                 data = {};
             }
@@ -314,6 +394,7 @@
             return data;
 
         } catch (error) {
+
             if (
                 error.name ===
                 'AbortError'
@@ -337,7 +418,9 @@
 
     function safeText(value) {
         return String(
-            value == null ? '' : value
+            value == null
+                ? ''
+                : value
         );
     }
 
@@ -426,10 +509,12 @@
         }
 
         return (
-            safeText(username).toLowerCase() ===
+            safeText(username)
+                .toLowerCase() ===
             safeText(
                 state.currentUser.username
-            ).toLowerCase()
+            )
+                .toLowerCase()
         );
     }
 
@@ -444,7 +529,17 @@
                 'none';
         }
 
-        if (els.chatHeader) {
+        /*
+         * No dashboard, o header permanece visível porque
+         * ele também contém o botão de fechar.
+         *
+         * Na página standalone, o header só aparece quando
+         * uma conversa está selecionada.
+         */
+        if (
+            els.chatHeader &&
+            !embeddedMode
+        ) {
             els.chatHeader.style.display =
                 'flex';
         }
@@ -462,7 +557,14 @@
                 'flex';
         }
 
-        if (els.chatHeader) {
+        /*
+         * No dashboard o header precisa continuar visível
+         * porque contém o botão X.
+         */
+        if (
+            els.chatHeader &&
+            !embeddedMode
+        ) {
             els.chatHeader.style.display =
                 'none';
         }
@@ -475,7 +577,8 @@
         state.messages = [];
 
         if (els.messagesContainer) {
-            els.messagesContainer.innerHTML = '';
+            els.messagesContainer.innerHTML =
+                '';
         }
     }
 
@@ -562,6 +665,7 @@
                 </div>
 
                 <div class="conversation-meta">
+
                     ${
                         time
                             ? `
@@ -581,6 +685,7 @@
                             `
                             : ''
                     }
+
                 </div>
             </button>
         `;
@@ -615,12 +720,14 @@
                         const username =
                             safeText(
                                 conversation.username
-                            ).toLowerCase();
+                            )
+                                .toLowerCase();
 
                         const displayName =
                             safeText(
                                 conversation.displayName
-                            ).toLowerCase();
+                            )
+                                .toLowerCase();
 
                         return (
                             !search ||
@@ -670,7 +777,9 @@
     }
 
 
-    function findConversation(username) {
+    function findConversation(
+        username
+    ) {
         return state.conversations.find(
             conversation =>
                 getConversationUsername(
@@ -694,14 +803,18 @@
 
         const wasNearBottom =
             (
-                els.messagesContainer.scrollHeight -
-                els.messagesContainer.scrollTop -
-                els.messagesContainer.clientHeight
+                els.messagesContainer
+                    .scrollHeight -
+                els.messagesContainer
+                    .scrollTop -
+                els.messagesContainer
+                    .clientHeight
             ) < 100;
 
         if (!messages.length) {
             els.messagesContainer.innerHTML = `
                 <div class="empty-chat">
+
                     <div class="empty-chat-title">
                         Nenhuma mensagem ainda
                     </div>
@@ -709,6 +822,7 @@
                     <div class="empty-chat-subtitle">
                         Envie uma mensagem para iniciar esta conversa!
                     </div>
+
                 </div>
             `;
 
@@ -749,14 +863,18 @@
                             <div
                                 class="message-row ${bubbleClass}"
                             >
+
                                 <div
                                     class="message-bubble"
                                 >
-                                    ${escapeHtml(content)}
+                                    ${escapeHtml(
+                                        content
+                                    )}
 
                                     <div
                                         class="message-meta"
                                     >
+
                                         <span>
                                             ${escapeHtml(
                                                 formatTime(
@@ -774,8 +892,11 @@
                                                 `
                                                 : ''
                                         }
+
                                     </div>
+
                                 </div>
+
                             </div>
                         `;
                     }
@@ -803,7 +924,8 @@
             return;
         }
 
-        state.loadingConversations = true;
+        state.loadingConversations =
+            true;
 
         try {
             const response =
@@ -849,7 +971,8 @@
         const requestId =
             ++state.historyRequestId;
 
-        state.loadingHistory = true;
+        state.loadingHistory =
+            true;
 
         try {
             const response =
@@ -860,9 +983,9 @@
                 );
 
             /*
-             * Se o usuário mudou de conversa
-             * enquanto essa requisição estava
-             * rodando, ignoramos o resultado antigo.
+             * Se o usuário mudou de conversa enquanto
+             * a requisição antiga estava rodando,
+             * ignoramos o resultado antigo.
              */
             if (
                 requestId !==
@@ -892,9 +1015,8 @@
 
         } catch (error) {
             /*
-             * Não limpamos a tela em caso de erro.
-             * Isso evita o chat "piscar" ou parecer
-             * vazio quando o servidor está lento.
+             * Mantemos o conteúdo atual caso o servidor
+             * esteja lento ou temporariamente indisponível.
              */
             console.error(
                 '[Node.GG Chat] Erro ao carregar histórico:',
@@ -978,10 +1100,82 @@
             username
         );
 
-        if (els.messageInput) {
+        if (
+            els.messageInput &&
+            !state.destroyed
+        ) {
             els.messageInput.focus();
         }
     }
+
+
+    /* =====================================================
+       DASHBOARD CHAT EVENTS
+    ===================================================== */
+
+    window.addEventListener(
+        'nodegg:open-chat',
+        event => {
+
+            const detail =
+                event.detail || {};
+
+            const username =
+                String(
+                    detail.username || ''
+                ).trim();
+
+            const displayName =
+                String(
+                    detail.displayName ||
+                    username
+                ).trim();
+
+            if (!username) {
+                return;
+            }
+
+            /*
+             * O dashboard pode mandar o evento enquanto
+             * o chat ainda está inicializando.
+             */
+            if (!state.initialized) {
+                state.pendingDashboardConversation = {
+                    username,
+                    displayName
+                };
+
+                return;
+            }
+
+            setActiveConversation(
+                username,
+                displayName
+            );
+        }
+    );
+
+
+    window.addEventListener(
+        'nodegg:close-chat',
+        () => {
+
+            state.activeConversation =
+                null;
+
+            state.messages = [];
+
+            /*
+             * Invalida qualquer requisição de histórico
+             * que ainda esteja em andamento.
+             */
+            state.historyRequestId++;
+
+            saveState();
+
+            showNoConversationSelected();
+        }
+    );
 
 
     /* =====================================================
@@ -1007,18 +1201,21 @@
         const receiver =
             state.activeConversation;
 
-        state.sendingMessage = true;
+        state.sendingMessage =
+            true;
 
         if (els.sendBtn) {
-            els.sendBtn.disabled = true;
+            els.sendBtn.disabled =
+                true;
         }
 
         /*
-         * Limpamos somente depois de capturar
-         * o conteúdo. Se o envio falhar, o texto
-         * volta para o campo.
+         * Limpamos o input depois de capturar
+         * o conteúdo. Em caso de falha, o texto
+         * será restaurado.
          */
-        els.messageInput.value = '';
+        els.messageInput.value =
+            '';
 
         try {
             const response =
@@ -1045,7 +1242,8 @@
                         timestamp,
 
                     sender:
-                        state.currentUser.username,
+                        state.currentUser
+                            .username,
 
                     receiver,
 
@@ -1054,10 +1252,6 @@
                     timestamp
                 };
 
-            /*
-             * Alguns backends podem devolver
-             * timestamp como createdAt.
-             */
             if (
                 !message.timestamp &&
                 !message.createdAt
@@ -1083,8 +1277,9 @@
             renderConversations();
 
         } catch (error) {
+
             /*
-             * Não perde a mensagem do usuário
+             * Não perdemos a mensagem digitada
              * se o servidor rejeitar o envio.
              */
             els.messageInput.value =
@@ -1101,6 +1296,7 @@
             );
 
         } finally {
+
             state.sendingMessage =
                 false;
 
@@ -1132,11 +1328,23 @@
         if (!conversation) {
             conversation = {
                 username,
-                displayName: username,
-                lastMessage: content,
-                lastMessageAt: timestamp,
-                time: formatTime(timestamp),
-                unread: 0
+
+                displayName:
+                    username,
+
+                lastMessage:
+                    content,
+
+                lastMessageAt:
+                    timestamp,
+
+                time:
+                    formatTime(
+                        timestamp
+                    ),
+
+                unread:
+                    0
             };
 
             state.conversations.unshift(
@@ -1153,9 +1361,12 @@
             timestamp;
 
         conversation.time =
-            formatTime(timestamp);
+            formatTime(
+                timestamp
+            );
 
-        conversation.unread = 0;
+        conversation.unread =
+            0;
     }
 
 
@@ -1164,15 +1375,12 @@
     ===================================================== */
 
     async function refreshChat() {
-        if (
-            state.destroyed
-        ) {
+        if (state.destroyed) {
             return;
         }
 
         /*
-         * Primeiro atualizamos a lista.
-         * Depois o histórico da conversa ativa.
+         * Atualiza a lista de conversas primeiro.
          */
         await loadConversations();
 
@@ -1228,6 +1436,7 @@
             .addEventListener(
                 'click',
                 event => {
+
                     const target =
                         event.target.closest(
                             '[data-user]'
@@ -1260,6 +1469,7 @@
 
 
     function bindChatControls() {
+
         if (els.sendBtn) {
             els.sendBtn.addEventListener(
                 'click',
@@ -1271,6 +1481,7 @@
             els.messageInput.addEventListener(
                 'keydown',
                 event => {
+
                     if (
                         event.key === 'Enter' &&
                         !event.shiftKey
@@ -1321,6 +1532,10 @@
                 username
             );
 
+        /*
+         * No dashboard, se não existe mais a conversa
+         * salva na lista atual, não abrimos nada.
+         */
         if (!conversation) {
             showNoConversationSelected();
 
@@ -1344,6 +1559,11 @@
             return;
         }
 
+        /*
+         * Marcamos como inicializado antes dos awaits.
+         * Assim, depois que o dashboard carregar, qualquer
+         * evento nodegg:open-chat já pode abrir normalmente.
+         */
         state.initialized = true;
 
         const validSession =
@@ -1367,7 +1587,29 @@
             return;
         }
 
-        await restoreActiveConversation();
+        /*
+         * Se o usuário clicou em um amigo durante a
+         * inicialização, essa conversa tem prioridade.
+         *
+         * Caso contrário, restauramos a conversa anterior.
+         */
+        if (
+            state.pendingDashboardConversation
+        ) {
+            const pending =
+                state.pendingDashboardConversation;
+
+            state.pendingDashboardConversation =
+                null;
+
+            await setActiveConversation(
+                pending.username,
+                pending.displayName
+            );
+
+        } else {
+            await restoreActiveConversation();
+        }
 
         if (state.destroyed) {
             return;
@@ -1384,7 +1626,8 @@
     window.addEventListener(
         'beforeunload',
         () => {
-            state.destroyed = true;
+            state.destroyed =
+                true;
 
             stopPolling();
         }
@@ -1394,13 +1637,14 @@
     document.addEventListener(
         'visibilitychange',
         () => {
+
             if (state.destroyed) {
                 return;
             }
 
             /*
              * Quando a aba volta a ficar visível,
-             * fazemos uma atualização imediata.
+             * atualizamos imediatamente.
              */
             if (
                 document.visibilityState ===
