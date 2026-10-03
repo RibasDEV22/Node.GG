@@ -47,9 +47,6 @@
     --sidebar-width: 280px;
     --topbar-height: 76px;
 
-    --chat-width: 400px;
-    --chat-min-width: 320px;
-
     --radius-sm: 8px;
     --radius-md: 12px;
     --radius-lg: 16px;
@@ -153,11 +150,13 @@ button {
 
     display: flex;
     flex-direction: row;
+    align-items: stretch;
 
     width: 100%;
     height: 100dvh;
 
     min-height: 520px;
+    min-width: 0;
 
     overflow: hidden;
 
@@ -723,7 +722,7 @@ button {
 
 .topbar {
     position: relative;
-    z-index: 20;
+    z-index: 200;
 
     flex:
         0 0 var(--topbar-height);
@@ -1072,6 +1071,8 @@ button {
    ========================================================================== */
 
 .content-body {
+    position: relative;
+
     flex:
         1 1 auto;
 
@@ -1705,32 +1706,48 @@ button {
 
 
 /* ==========================================================================
-   DASHBOARD CHAT PANEL
+   DASHBOARD CHAT
    ========================================================================== */
 
 /*
-    DESKTOP:
+    NOVO MODELO:
 
-    [ SIDEBAR ][ MAIN CONTENT ][ CHAT ]
+    ┌──────────────────────────────────────────────┐
+    │ TOPBAR                                       │
+    ├──────────────────────────────────────────────┤
+    │                                              │
+    │              CHAT                           │
+    │                                              │
+    └──────────────────────────────────────────────┘
 
-    O chat faz parte do flex do dashboard.
-    Ele NÃO fica por cima do conteúdo.
+    O chat não ocupa mais uma coluna lateral.
+
+    Ele fica dentro do MAIN CONTENT e cobre somente
+    a área abaixo da topbar.
+
+    A topbar continua completamente utilizável:
+    - Ping
+    - Status
+    - Busca
+    - Adicionar
+    - Título
+    - Menu
 */
 
 .dashboard-chat-panel {
-    position: relative;
+    position: absolute;
 
-    z-index: 90;
+    z-index: 150;
 
-    flex:
-        0 0 var(--chat-width);
+    top: var(--topbar-height);
+    right: 0;
+    bottom: 0;
+    left: 0;
 
-    width: var(--chat-width);
+    width: 100%;
+    height: auto;
 
-    min-width: var(--chat-min-width);
-
-    height: 100%;
-
+    min-width: 0;
     min-height: 0;
 
     display: none;
@@ -1741,31 +1758,26 @@ button {
     background:
         var(--chat-bg);
 
-    border-left:
-        1px solid rgba(255, 255, 255, 0.08);
+    border: 0;
+
+    border-top:
+        1px solid rgba(255, 255, 255, 0.07);
 
     border-radius: 0;
 
     box-shadow:
-        -12px 0 35px rgba(0, 0, 0, 0.16);
+        0 -15px 45px rgba(0, 0, 0, 0.18);
 
     /*
-        Fallback de resize nativo.
-        O JS poderá controlar o handle lateral
-        com muito mais precisão.
+        O chat agora é uma camada interna do main-content.
+        Não existe resize lateral.
     */
-    resize: horizontal;
+    resize: none;
 
-    /*
-        Evita que o flex tente esmagar o painel.
-    */
-    flex-shrink: 0;
+    isolation: isolate;
 
-    /*
-        Necessário para o conteúdo interno não
-        estourar o painel.
-    */
-    box-sizing: border-box;
+    animation:
+        chatPanelIn 0.20s ease-out;
 }
 
 .dashboard-chat-panel.open {
@@ -1774,87 +1786,27 @@ button {
 
 
 /* ==========================================================================
-   DESKTOP CHAT RESIZE HANDLE
+   CHAT BACKDROP / DEPTH
    ========================================================================== */
 
-@media (min-width: 769px) {
+.dashboard-chat-panel::before {
+    content: "";
 
-    .dashboard-chat-panel::before {
-        content: "";
+    position: absolute;
 
-        position: absolute;
+    inset: 0;
 
-        top: 0;
-        left: 0;
-        bottom: 0;
+    z-index: -1;
 
-        width: 9px;
+    pointer-events: none;
 
-        z-index: 100;
-
-        cursor: ew-resize;
-
-        background: transparent;
-
-        transition:
-            background-color 0.15s ease;
-    }
-
-    .dashboard-chat-panel:hover::before {
-        background:
-            rgba(0, 168, 132, 0.08);
-    }
-
-    .dashboard-chat-panel::after {
-        content: "";
-
-        position: absolute;
-
-        top: 50%;
-        left: 2px;
-
-        width: 3px;
-        height: 48px;
-
-        z-index: 101;
-
-        transform:
-            translateY(-50%);
-
-        border-radius: 999px;
-
-        background:
-            rgba(255, 255, 255, 0.12);
-
-        pointer-events: none;
-
-        transition:
-            height 0.15s ease,
-            background-color 0.15s ease,
-            opacity 0.15s ease;
-    }
-
-    .dashboard-chat-panel:hover::after {
-        height: 58px;
-
-        background:
-            rgba(0, 168, 132, 0.55);
-    }
-
-    /*
-        Durante resize o painel não deve animar.
-    */
-    body.dashboard-chat-resizing
-    .dashboard-chat-panel {
-        transition: none !important;
-    }
-
-    body.dashboard-chat-resizing,
-    body.dashboard-chat-resizing * {
-        cursor: ew-resize !important;
-
-        user-select: none !important;
-    }
+    background:
+        radial-gradient(
+            circle at 50% -15%,
+            rgba(0, 168, 132, 0.07),
+            transparent 38%
+        ),
+        var(--chat-bg);
 }
 
 
@@ -1871,7 +1823,6 @@ button {
     width: 100%;
 
     min-width: 0;
-
     min-height: 68px;
 
     display: flex;
@@ -1880,7 +1831,7 @@ button {
 
     gap: 10px;
 
-    padding: 12px 14px;
+    padding: 12px 18px;
 
     background:
         var(--chat-bg-tertiary);
@@ -1889,6 +1840,9 @@ button {
         1px solid rgba(255, 255, 255, 0.06);
 
     overflow: hidden;
+
+    box-shadow:
+        0 3px 16px rgba(0, 0, 0, 0.10);
 }
 
 .dashboard-chat-header-info {
@@ -1972,11 +1926,11 @@ button {
 }
 
 .dashboard-chat-close {
-    width: 36px;
-    height: 36px;
+    width: 38px;
+    height: 38px;
 
     flex:
-        0 0 36px;
+        0 0 38px;
 
     display: flex;
     align-items: center;
@@ -2035,17 +1989,24 @@ button {
     text-align: center;
 
     overflow: hidden;
+
+    background:
+        radial-gradient(
+            circle at center,
+            rgba(0, 168, 132, 0.025),
+            transparent 45%
+        );
 }
 
 .dashboard-chat-empty i {
-    width: 62px;
-    height: 62px;
+    width: 70px;
+    height: 70px;
 
     display: flex;
     align-items: center;
     justify-content: center;
 
-    border-radius: 18px;
+    border-radius: 20px;
 
     border:
         1px solid rgba(255, 255, 255, 0.06);
@@ -2056,26 +2017,29 @@ button {
     color:
         rgba(255, 255, 255, 0.22);
 
-    font-size: 25px;
+    font-size: 27px;
+
+    box-shadow:
+        0 12px 35px rgba(0, 0, 0, 0.15);
 }
 
 .dashboard-chat-empty span {
-    max-width: 260px;
+    max-width: 320px;
 
     color: var(--chat-muted);
 
-    font-size: 0.78rem;
+    font-size: 0.8rem;
     line-height: 1.5;
 }
 
 
 /* ==========================================================================
-   MESSAGES
+   MESSAGES CONTAINER
    ========================================================================== */
 
 .dashboard-messages-container {
     flex:
-        1 1 auto;
+        1 1 0;
 
     width: 100%;
 
@@ -2085,23 +2049,19 @@ button {
     display: flex;
     flex-direction: column;
 
-    gap: 6px;
+    gap: 7px;
 
-    padding: 16px 14px;
+    padding:
+        18px
+        clamp(14px, 3vw, 34px)
+        16px;
 
     overflow-x: hidden;
     overflow-y: auto;
 
-    /*
-        Evita que a página/dashboard "roube" o scroll.
-    */
     overscroll-behavior:
         contain;
 
-    /*
-        Evita o salto horizontal quando a scrollbar
-        aparece/desaparece.
-    */
     scrollbar-gutter:
         stable;
 
@@ -2116,11 +2076,17 @@ button {
         transparent;
 
     /*
-        Permite o container ser flexível mesmo quando
-        uma mensagem é absurdamente grande.
+        Muito importante:
+        impede conteúdo interno de alterar
+        a largura do flex container.
     */
     overflow-wrap:
         anywhere;
+}
+
+.dashboard-messages-container:empty {
+    display:
+        none;
 }
 
 .dashboard-messages-container::-webkit-scrollbar {
@@ -2155,21 +2121,18 @@ button {
 
     display: flex;
 
-    /*
-        Importante:
-        uma mensagem não deve forçar a largura
-        do container inteiro.
-    */
     flex:
         0 0 auto;
 }
 
 .message-row.incoming {
-    justify-content: flex-start;
+    justify-content:
+        flex-start;
 }
 
 .message-row.outgoing {
-    justify-content: flex-end;
+    justify-content:
+        flex-end;
 }
 
 
@@ -2180,27 +2143,25 @@ button {
 .message-bubble {
     position: relative;
 
-    width: fit-content;
+    display: block;
 
-    /*
-        Nunca deixa uma mensagem ocupar 100% sem necessidade.
-    */
+    width:
+        fit-content;
+
     max-width:
-        min(78%, 520px);
+        min(72%, 720px);
 
     min-width: 0;
 
     padding:
-        8px 11px 7px;
+        9px 12px 7px;
 
-    border-radius: 13px;
+    border-radius:
+        13px;
 
     overflow:
         hidden;
 
-    /*
-        ESSENCIAL para links, hashes e textos enormes.
-    */
     overflow-wrap:
         anywhere;
 
@@ -2208,20 +2169,13 @@ button {
         break-word;
 
     line-height:
-        1.42;
+        1.45;
 
     font-size:
         0.88rem;
 
     box-shadow:
         0 1px 2px rgba(0, 0, 0, 0.12);
-
-    /*
-        Evita que o conteúdo interno force a bolha
-        a ultrapassar o painel.
-    */
-    contain:
-        layout paint;
 }
 
 
@@ -2277,12 +2231,106 @@ button {
     word-break:
         break-word;
 
-    /*
-        URLs gigantes não conseguem quebrar
-        o layout.
-    */
     hyphens:
         auto;
+}
+
+
+/* ==========================================================================
+   MESSAGE LINKS
+   ========================================================================== */
+
+.message-content a {
+    max-width: 100%;
+
+    color: inherit;
+
+    text-decoration:
+        underline;
+
+    overflow-wrap:
+        anywhere;
+
+    word-break:
+        break-word;
+}
+
+
+/* ==========================================================================
+   MESSAGE MEDIA
+   ========================================================================== */
+
+.message-bubble img,
+.message-bubble video {
+    display: block;
+
+    max-width: 100%;
+    height: auto;
+
+    margin-top: 6px;
+
+    border-radius: 9px;
+}
+
+.message-bubble img:first-child,
+.message-bubble video:first-child {
+    margin-top: 0;
+}
+
+
+/* ==========================================================================
+   MESSAGE CODE / PRE
+   ========================================================================== */
+
+.message-bubble code {
+    max-width: 100%;
+
+    padding:
+        2px 5px;
+
+    border-radius: 5px;
+
+    background:
+        rgba(0, 0, 0, 0.18);
+
+    font-family:
+        Consolas,
+        "Courier New",
+        monospace;
+
+    font-size:
+        0.86em;
+
+    overflow-wrap:
+        anywhere;
+
+    word-break:
+        break-word;
+}
+
+.message-bubble pre {
+    max-width: 100%;
+
+    margin-top: 6px;
+
+    padding: 9px;
+
+    border-radius: 8px;
+
+    background:
+        rgba(0, 0, 0, 0.20);
+
+    overflow-x: auto;
+
+    white-space: pre;
+
+    font-family:
+        Consolas,
+        "Courier New",
+        monospace;
+
+    font-size:
+        0.82rem;
 }
 
 
@@ -2402,13 +2450,18 @@ button {
     min-width: 0;
 
     padding:
-        10px 12px;
+        10px
+        clamp(12px, 3vw, 34px)
+        calc(10px + env(safe-area-inset-bottom));
 
     background:
         var(--chat-bg-tertiary);
 
     border-top:
         1px solid rgba(255, 255, 255, 0.06);
+
+    box-shadow:
+        0 -4px 18px rgba(0, 0, 0, 0.10);
 }
 
 .dashboard-chat-input-wrapper {
@@ -2430,16 +2483,16 @@ button {
 
     width: 100%;
 
-    height: 42px;
+    height: 44px;
 
     padding:
-        0 14px;
+        0 15px;
 
     border:
         1px solid transparent;
 
     border-radius:
-        21px;
+        22px;
 
     outline: none;
 
@@ -2485,11 +2538,11 @@ button {
    ========================================================================== */
 
 .dashboard-send-btn {
-    width: 42px;
-    height: 42px;
+    width: 44px;
+    height: 44px;
 
     flex:
-        0 0 42px;
+        0 0 44px;
 
     display: flex;
     align-items: center;
@@ -2551,141 +2604,25 @@ button {
 
 
 /* ==========================================================================
-   DESKTOP CHAT
-   ========================================================================== */
-
-@media (min-width: 769px) {
-
-    .dashboard-chat-panel {
-        position: relative;
-
-        top: auto;
-        right: auto;
-        bottom: auto;
-        left: auto;
-
-        width:
-            var(--chat-width);
-
-        height:
-            100%;
-
-        min-width:
-            var(--chat-min-width);
-
-        max-width:
-            none;
-
-        min-height:
-            0;
-
-        max-height:
-            none;
-
-        flex:
-            0 0 var(--chat-width);
-
-        align-self:
-            stretch;
-
-        display:
-            none;
-
-        flex-direction:
-            column;
-
-        border-top:
-            0;
-
-        border-right:
-            0;
-
-        border-bottom:
-            0;
-
-        border-left:
-            1px solid rgba(255, 255, 255, 0.08);
-
-        border-radius:
-            0;
-
-        resize:
-            horizontal;
-
-        overflow:
-            hidden;
-    }
-
-    .dashboard-chat-panel.open {
-        display:
-            flex;
-    }
-
-    .dashboard-chat-header {
-        flex:
-            0 0 64px;
-
-        min-height:
-            64px;
-    }
-
-    .dashboard-messages-container {
-        flex:
-            1 1 auto;
-
-        min-width:
-            0;
-
-        min-height:
-            0;
-    }
-
-    .dashboard-chat-input-area {
-        flex:
-            0 0 auto;
-    }
-}
-
-
-/* ==========================================================================
-   DESKTOP CHAT WIDTH LIMITS
+   CHAT OPEN STATE
    ========================================================================== */
 
 /*
-    Não existe max-width artificial aqui.
-    O painel pode crescer bastante.
+    Quando o chat abre, o conteúdo atrás dele continua existindo,
+    mas fica coberto pelo painel.
 
-    O limite prático fica por conta do JS de resize
-    e da largura disponível do viewport.
+    Isso permite que a topbar continue funcionando porque
+    o chat começa exatamente abaixo dela.
 */
 
-@media (min-width: 769px) and (max-width: 1100px) {
-
-    .dashboard-chat-panel {
-        min-width:
-            300px;
-
-        flex-basis:
-            360px;
-    }
-
-    .message-bubble {
-        max-width:
-            84%;
-    }
-}
-
-@media (min-width: 1500px) {
-
-    .message-bubble {
-        max-width:
-            min(78%, 620px);
-    }
+.main-content:has(.dashboard-chat-panel.open) .content-body {
+    overflow:
+        hidden;
 }
 
 
 /* ==========================================================================
-   TABLET
+   MOBILE CHAT
    ========================================================================== */
 
 @media (max-width: 768px) {
@@ -2697,22 +2634,22 @@ button {
             9999;
 
         top:
-            12px;
+            68px;
 
         right:
-            12px;
+            0;
 
         bottom:
-            12px;
+            0;
 
         left:
-            12px;
+            0;
 
         width:
-            auto;
+            100vw;
 
         height:
-            auto;
+            calc(100dvh - 68px);
 
         min-width:
             0;
@@ -2720,35 +2657,20 @@ button {
         min-height:
             0;
 
-        max-width:
-            none;
-
-        max-height:
-            none;
-
-        flex:
-            none;
-
         border:
-            1px solid rgba(255, 255, 255, 0.08);
+            0;
+
+        border-top:
+            1px solid rgba(255, 255, 255, 0.07);
 
         border-radius:
-            14px;
+            0;
 
         box-shadow:
-            0 25px 70px rgba(0, 0, 0, 0.45);
+            0 -15px 45px rgba(0, 0, 0, 0.35);
 
-        resize:
-            none;
-
-        overflow:
-            hidden;
-    }
-
-    .dashboard-chat-panel::before,
-    .dashboard-chat-panel::after {
-        display:
-            none;
+        animation:
+            chatPanelInMobile 0.20s ease-out;
     }
 
     .dashboard-chat-header {
@@ -2766,7 +2688,7 @@ button {
 
     .message-bubble {
         max-width:
-            86%;
+            84%;
     }
 }
 
@@ -2779,34 +2701,10 @@ button {
 
     .dashboard-chat-panel {
         top:
-            0;
-
-        right:
-            0;
-
-        bottom:
-            0;
-
-        left:
-            0;
-
-        width:
-            100vw;
+            60px;
 
         height:
-            100dvh;
-
-        min-height:
-            100dvh;
-
-        border:
-            0;
-
-        border-radius:
-            0;
-
-        box-shadow:
-            none;
+            calc(100dvh - 60px);
     }
 
     .dashboard-chat-header {
@@ -2814,7 +2712,7 @@ button {
             60px;
 
         padding:
-            10px 11px;
+            9px 11px;
     }
 
     .dashboard-chat-avatar {
@@ -2838,7 +2736,7 @@ button {
 
     .message-bubble {
         max-width:
-            88%;
+            89%;
 
         padding:
             8px 10px 6px;
@@ -2856,9 +2754,6 @@ button {
         height:
             44px;
 
-        /*
-            Evita zoom automático no iOS.
-        */
         font-size:
             16px;
     }
@@ -2881,6 +2776,14 @@ button {
    ========================================================================== */
 
 @media (max-width: 360px) {
+
+    .dashboard-chat-panel {
+        top:
+            58px;
+
+        height:
+            calc(100dvh - 58px);
+    }
 
     .dashboard-chat-header-info {
         gap:
@@ -2905,7 +2808,7 @@ button {
 
     .message-bubble {
         max-width:
-            91%;
+            92%;
     }
 }
 
@@ -2918,13 +2821,13 @@ button {
 
     .dashboard-chat-panel {
         top:
-            0;
+            52px;
 
         bottom:
             0;
 
         height:
-            100dvh;
+            calc(100dvh - 52px);
     }
 
     .dashboard-chat-header {
@@ -3071,6 +2974,9 @@ button {
 
         bottom:
             0;
+
+        z-index:
+            10000;
 
         transform:
             translateX(-105%);
@@ -3404,6 +3310,44 @@ button {
 
         transform:
             translateX(0);
+    }
+}
+
+@keyframes chatPanelIn {
+
+    from {
+        opacity:
+            0;
+
+        transform:
+            translateY(8px);
+    }
+
+    to {
+        opacity:
+            1;
+
+        transform:
+            translateY(0);
+    }
+}
+
+@keyframes chatPanelInMobile {
+
+    from {
+        opacity:
+            0;
+
+        transform:
+            translateY(14px);
+    }
+
+    to {
+        opacity:
+            1;
+
+        transform:
+            translateY(0);
     }
 }
 
