@@ -37,9 +37,6 @@
                 <button class="server-icon active" title="Início">
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>
                 </button>
-                <div class="server-divider"></div>
-                <div class="server-icon" title="Dev Squad 🚀"><span>DS</span></div>
-                <div class="server-icon" title="Comunidade Gaming 🎮"><span>CG</span></div>
             </nav>
 
             <aside class="sub-sidebar">
@@ -48,7 +45,6 @@
                         <img src="../login/icon.png" alt="Node Icon" class="logo-icon" onerror="this.style.display='none'">
                         <h2>Node<span class="highlight">.GG</span></h2>
                     </div>
-                    <span class="version-badge">v2.5</span>
                 </div>
 
                 <div class="sidebar-scrollable">
@@ -65,14 +61,14 @@
                     </div>
                 </div>
 
-                <!-- Perfil Logado Real -->
+                <!-- Perfil do Usuário Autenticado -->
                 <div class="user-profile-card">
                     <div class="avatar-wrapper">
                         <div class="avatar-placeholder" id="user-avatar-text">--</div>
                         <span class="status-indicator online"></span>
                     </div>
                     <div class="user-info">
-                        <div class="user-name" id="user-display-name">A carregar...</div>
+                        <div class="user-name" id="user-display-name">Carregando...</div>
                         <div class="user-tag" id="user-username">@...</div>
                     </div>
                     <div class="user-actions">
@@ -92,9 +88,9 @@
                         <span>Painel de Amigos</span>
                     </div>
                     <div class="filter-tabs">
-                        <button class="tab-btn active">Todos</button>
-                        <button class="tab-btn">Online</button>
-                        <button class="tab-btn">Pedidos</button>
+                        <button class="tab-btn active" data-tab="all">Todos</button>
+                        <button class="tab-btn" data-tab="online">Online</button>
+                        <button class="tab-btn" data-tab="requests">Pedidos</button>
                     </div>
                 </div>
 
@@ -141,11 +137,11 @@
 
                 <section class="users-view">
                     <div class="section-header">
-                        <span class="section-title">ATIVIDADE RECENTE & COMUNIDADE</span>
+                        <span class="section-title">UTILIZADORES E ATIVIDADE</span>
                     </div>
                     
                     <div class="users-list" id="users-container">
-                        <!-- Conteúdo carregado dinamicamente -->
+                        <!-- Carregado inteiramente via JS -->
                     </div>
                 </section>
             </div>
