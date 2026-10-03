@@ -13,7 +13,7 @@ tabLogin.addEventListener('change', clearFeedback);
 tabRegister.addEventListener('change', clearFeedback);
 
 // ==========================================
-// CONEXÃO WEBSOCKET (CORRIGIDA)
+// CONEXÃO WEBSOCKET
 // ==========================================
 
 function getWebSocketURL() {
@@ -113,15 +113,19 @@ function handleAuthSuccess(data) {
         console.log('[AUTH] ✅ Usuário:', user.username);
     }
 
-    const msg = currentAction === 'login'
-        ? 'Login realizado com sucesso! ✅ Redirecionando...'
-        : 'Conta criada com sucesso! ✅ Redirecionando...';
+    const msg = currentAction === 'register'
+        ? 'Conta criada com sucesso! ✅ Redirecionando...'
+        : 'Login realizado com sucesso! ✅ Redirecionando...';
 
     showFeedback(msg, 'success');
-    setLoading(btn, false, currentAction === 'login' ? 'Entrar no Node' : 'Criar Minha Conta');
+    
+    if (btn) {
+        setLoading(btn, false, currentAction === 'login' ? 'Entrar no Node' : 'Criar Minha Conta');
+    }
 
+    // Redireciona para o Dashboard após a autenticação
     setTimeout(() => {
-        window.location.href = '../chat/';
+        window.location.href = '../dashboard/';
     }, 1200);
 }
 
@@ -133,7 +137,10 @@ function handleAuthError(data) {
     const message = data.message || 'Erro ao autenticar.';
     console.error('[AUTH] ❌', message);
     showFeedback(message, 'error');
-    setLoading(btn, false, currentAction === 'login' ? 'Entrar no Node' : 'Criar Minha Conta');
+    
+    if (btn) {
+        setLoading(btn, false, currentAction === 'login' ? 'Entrar no Node' : 'Criar Minha Conta');
+    }
 }
 
 function handleMaintenance(data) {
@@ -143,7 +150,10 @@ function handleMaintenance(data) {
 
     console.warn('[MAINT] ⚠️ Servidor em manutenção');
     showFeedback(data.message || 'Servidor em manutenção. Tente novamente mais tarde.', 'error');
-    setLoading(btn, false, currentAction === 'login' ? 'Entrar no Node' : 'Criar Minha Conta');
+    
+    if (btn) {
+        setLoading(btn, false, currentAction === 'login' ? 'Entrar no Node' : 'Criar Minha Conta');
+    }
 }
 
 // ==========================================
@@ -273,12 +283,13 @@ function clearFeedback() {
 }
 
 function setLoading(button, isLoading, text) {
+    if (!button) return;
     button.disabled = isLoading;
     button.textContent = text;
 }
 
 // ==========================================
-// RECONEXÃO COM TOKEN SALVO (OPCIONAL)
+// RECONEXÃO COM TOKEN SALVO
 // ==========================================
 
 window.addEventListener('load', async () => {
@@ -290,6 +301,7 @@ window.addEventListener('load', async () => {
     console.log('[LOAD] 🔄 Tentando reconectar com token salvo...');
 
     try {
+        currentAction = 'reconnect';
         await connectSocket();
 
         socket.send(JSON.stringify({
