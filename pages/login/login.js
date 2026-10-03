@@ -12,6 +12,8 @@ const tabRegister = document.getElementById('tab-register');
 tabLogin.addEventListener('change', clearFeedback);
 tabRegister.addEventListener('change', clearFeedback);
 
+//...
+
 // ==========================================
 // CONEXÃO WEBSOCKET
 // ==========================================
