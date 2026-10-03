@@ -87,14 +87,15 @@
     return res.json();
   }
 
-  function redirectToLogin() {
-    if (window.top !== window.self) {
-      window.top.location.href = '../login/index.html';
-    } else {
-      window.location.href = '../login/index.html';
-    }
+ function redirectToLogin() {
+  const loginPath = '../../login/index.html'; // Volta de /chat e /dashboard para /pages/login/
+  
+  if (window.top !== window.self) {
+    window.top.location.href = loginPath;
+  } else {
+    window.location.href = loginPath;
   }
-
+}
   function scrollToBottom() {
     if (els.messagesContainer) {
       els.messagesContainer.scrollTop = els.messagesContainer.scrollHeight;
