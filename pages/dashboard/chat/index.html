@@ -2,545 +2,116 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Node.GG - Chat</title>
-
-    <link
-        rel="icon"
-        type="image/png"
-        href="../../../login/icon.png"
-        onerror="this.href='../../../login/icon.ico'"
-    >
-
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-
-    <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
-        rel="stylesheet"
-    >
-
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
-
-    <div class="chat-app">
-
-        <!-- =====================================================
-             SIDEBAR DE CANAIS
-             ===================================================== -->
-
+    <div class="chat-container">
+        <!-- Sidebar de Conversas -->
         <aside class="chat-sidebar">
-
-            <header class="chat-sidebar-header">
-
-                <div class="chat-server-info">
-                    <div class="server-avatar">
-                        DS
-                    </div>
-
-                    <div class="server-details">
-                        <strong>Dev Squad</strong>
-                        <span>Comunidade</span>
-                    </div>
-                </div>
-
-                <button
-                    class="sidebar-action"
-                    type="button"
-                    aria-label="Opções do servidor"
-                >
-                    ⋯
+            <div class="chat-header">
+                <h2>Mensagens</h2>
+                <button class="icon-btn" title="Nova conversa">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
                 </button>
-
-            </header>
-
-            <div class="channel-list">
-
-                <section class="channel-section">
-
-                    <div class="channel-section-header">
-                        <span>CANAIS DE TEXTO</span>
-
-                        <button
-                            class="channel-add"
-                            type="button"
-                            aria-label="Adicionar canal"
-                        >
-                            +
-                        </button>
-                    </div>
-
-                    <button
-                        class="channel-item active"
-                        type="button"
-                    >
-                        <span class="channel-icon">#</span>
-                        <span class="channel-name">geral-devs</span>
-                    </button>
-
-                    <button
-                        class="channel-item"
-                        type="button"
-                    >
-                        <span class="channel-icon">#</span>
-                        <span class="channel-name">programacao</span>
-                    </button>
-
-                    <button
-                        class="channel-item"
-                        type="button"
-                    >
-                        <span class="channel-icon">#</span>
-                        <span class="channel-name">showcase</span>
-                    </button>
-
-                    <button
-                        class="channel-item"
-                        type="button"
-                    >
-                        <span class="channel-icon">#</span>
-                        <span class="channel-name">off-topic</span>
-                    </button>
-
-                </section>
-
-                <section class="channel-section">
-
-                    <div class="channel-section-header">
-                        <span>GRUPOS</span>
-
-                        <button
-                            class="channel-add"
-                            type="button"
-                            aria-label="Adicionar grupo"
-                        >
-                            +
-                        </button>
-                    </div>
-
-                    <button
-                        class="channel-item"
-                        type="button"
-                    >
-                        <span class="channel-icon">#</span>
-                        <span class="channel-name">unity</span>
-                    </button>
-
-                    <button
-                        class="channel-item"
-                        type="button"
-                    >
-                        <span class="channel-icon">#</span>
-                        <span class="channel-name">web-dev</span>
-                    </button>
-
-                </section>
-
             </div>
 
-            <!-- USUÁRIO -->
+            <div class="search-bar">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <input type="text" id="search-input" placeholder="Buscar conversa..." />
+            </div>
 
-            <footer class="chat-user-panel">
-
-                <div class="user-avatar">
-                    U
-                    <span class="online-dot"></span>
-                </div>
-
-                <div class="chat-user-info">
-                    <strong>Carregando...</strong>
-                    <span>@usuario</span>
-                </div>
-
-                <button
-                    class="user-settings"
-                    type="button"
-                    aria-label="Configurações"
-                >
-                    ⚙
-                </button>
-
-            </footer>
-
+            <div class="conversations-list" id="conversations-list">
+                <!-- Preenchido via JS -->
+            </div>
         </aside>
 
-
-        <!-- =====================================================
-             ÁREA PRINCIPAL
-             ===================================================== -->
-
+        <!-- Área de Chat -->
         <main class="chat-main">
-
-            <!-- HEADER -->
-
-            <header class="chat-header">
-
-                <div class="chat-header-left">
-
-                    <button
-                        class="mobile-channel-button"
-                        type="button"
-                        aria-label="Abrir canais"
-                    >
-                        ☰
-                    </button>
-
-                    <span class="header-hash">#</span>
-
-                    <div class="header-channel-info">
-                        <strong>geral-devs</strong>
-                        <span>
-                            Converse com a comunidade de desenvolvedores
-                        </span>
-                    </div>
-
+            <div class="chat-area" id="chat-area">
+                <div class="chat-empty">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                    <span>Selecione uma conversa para começar</span>
                 </div>
+            </div>
 
+            <!-- Chat Header -->
+            <div class="chat-header-active" id="chat-header" style="display: none;">
+                <div class="chat-header-info">
+                    <div class="avatar-small" id="chat-avatar">U</div>
+                    <div>
+                        <h3 id="chat-username">Usuário</h3>
+                        <span class="status-text" id="chat-status">offline</span>
+                    </div>
+                </div>
                 <div class="chat-header-actions">
-
-                    <button
-                        class="header-action"
-                        type="button"
-                        aria-label="Pesquisar"
-                    >
-                        <svg
-                            width="19"
-                            height="19"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"
-                        >
-                            <circle cx="11" cy="11" r="8"></circle>
-                            <line
-                                x1="21"
-                                y1="21"
-                                x2="16.65"
-                                y2="16.65"
-                            ></line>
+                    <button class="icon-btn" title="Chamar">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
                         </svg>
                     </button>
-
-                    <button
-                        class="header-action"
-                        type="button"
-                        aria-label="Membros"
-                    >
-                        <svg
-                            width="19"
-                            height="19"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"
-                        >
-                            <path
-                                d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"
-                            ></path>
-
-                            <circle
-                                cx="9"
-                                cy="7"
-                                r="4"
-                            ></circle>
-
-                            <path
-                                d="M23 21v-2a4 4 0 0 0-3-3.87"
-                            ></path>
-
-                            <path
-                                d="M16 3.13a4 4 0 0 1 0 7.75"
-                            ></path>
+                    <button class="icon-btn" title="Detalhes">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="1"></circle>
+                            <circle cx="19" cy="12" r="1"></circle>
+                            <circle cx="5" cy="12" r="1"></circle>
                         </svg>
                     </button>
-
                 </div>
-
-            </header>
-
-
-            <!-- MENSAGENS -->
-
-            <div class="messages-area">
-
-                <div class="channel-intro">
-
-                    <div class="channel-intro-icon">
-                        #
-                    </div>
-
-                    <h1>Bem-vindo ao #geral-devs!</h1>
-
-                    <p>
-                        Esse é o começo do canal. Troque ideia,
-                        compartilhe projetos e fale sobre desenvolvimento.
-                    </p>
-
-                </div>
-
-
-                <!-- MENSAGEM 1 -->
-
-                <article class="message">
-
-                    <div class="message-avatar avatar-blue">
-                        J
-                    </div>
-
-                    <div class="message-content">
-
-                        <div class="message-header">
-
-                            <strong>Jaguaringa_99</strong>
-
-                            <span class="message-tag">
-                                WebGL / 3D
-                            </span>
-
-                            <time>Hoje às 20:41</time>
-
-                        </div>
-
-                        <p>
-                            Mano, finalmente consegui fazer o sistema de
-                            iluminação funcionar no WebGL sem destruir o FPS 💀
-                        </p>
-
-                    </div>
-
-                </article>
-
-
-                <!-- MENSAGEM 2 -->
-
-                <article class="message">
-
-                    <div class="message-avatar avatar-purple">
-                        R
-                    </div>
-
-                    <div class="message-content">
-
-                        <div class="message-header">
-
-                            <strong>RibasDEV</strong>
-
-                            <span class="message-tag">
-                                Dev
-                            </span>
-
-                            <time>Hoje às 20:43</time>
-
-                        </div>
-
-                        <p>
-                            Caralho, finalmente KKKKK. Quanto tá pegando
-                            agora?
-                        </p>
-
-                    </div>
-
-                </article>
-
-
-                <!-- MENSAGEM 3 -->
-
-                <article class="message">
-
-                    <div class="message-avatar avatar-orange">
-                        S
-                    </div>
-
-                    <div class="message-content">
-
-                        <div class="message-header">
-
-                            <strong>SquadLeader</strong>
-
-                            <span class="message-tag">
-                                Gaming
-                            </span>
-
-                            <time>Hoje às 20:44</time>
-
-                        </div>
-
-                        <p>
-                            Aqui também tô mexendo no projeto. Depois mando
-                            umas screenshots do sistema novo.
-                        </p>
-
-                    </div>
-
-                </article>
-
-
-                <!-- MENSAGEM 4 -->
-
-                <article class="message">
-
-                    <div class="message-avatar avatar-green">
-                        N
-                    </div>
-
-                    <div class="message-content">
-
-                        <div class="message-header">
-
-                            <strong>NodeBot</strong>
-
-                            <span class="bot-tag">
-                                BOT
-                            </span>
-
-                            <time>Hoje às 20:45</time>
-
-                        </div>
-
-                        <p>
-                            Novo membro entrou no servidor.
-                            Bem-vindo à Dev Squad! 🚀
-                        </p>
-
-                    </div>
-
-                </article>
-
             </div>
 
+            <!-- Messages Area -->
+            <div class="messages-container" id="messages-container">
+                <!-- Preenchido via JS -->
+            </div>
 
-            <!-- INPUT -->
-
-            <footer class="message-composer">
-
-                <button
-                    class="composer-action"
-                    type="button"
-                    aria-label="Adicionar arquivo"
-                >
-                    +
-                </button>
-
-                <input
-                    type="text"
-                    placeholder="Enviar mensagem em #geral-devs"
-                    autocomplete="off"
-                    spellcheck="true"
-                >
-
-                <div class="composer-actions">
-
-                    <button
-                        type="button"
-                        aria-label="Emoji"
-                    >
-                        ☺
+            <!-- Input Area -->
+            <div class="chat-input-area" id="chat-input-area" style="display: none;">
+                <div class="input-wrapper">
+                    <button class="icon-btn" title="Anexar arquivo">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 0 18.8-4.3M22 12.5a10 10 0 0 0-18.8 4.2"></path>
+                        </svg>
                     </button>
 
-                    <button
-                        type="button"
-                        aria-label="GIF"
-                    >
-                        GIF
+                    <input 
+                        type="text" 
+                        id="message-input" 
+                        placeholder="Escreva uma mensagem..." 
+                        autocomplete="off"
+                    />
+
+                    <button class="icon-btn emoji-btn" title="Emoji">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <path d="M8 14s1.5 2 4 2 4-2 4-2"></path>
+                            <line x1="9" y1="9" x2="9.01" y2="9"></line>
+                            <line x1="15" y1="9" x2="15.01" y2="9"></line>
+                        </svg>
                     </button>
 
+                    <button class="send-btn" id="send-btn" title="Enviar (Enter)">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M16.6915026,12.4744748 L3.50612381,13.2599618 C3.19218622,13.2599618 3.03521743,13.4170592 3.03521743,13.5741566 L1.15159189,20.0151496 C0.8376543,20.8006365 0.99,21.89 1.77946707,22.52 C2.41,22.99 3.50612381,23.1 4.13399899,22.8429026 L21.714504,14.0454487 C22.6563168,13.5741566 23.1272231,12.6315722 22.9702544,11.6889879 L4.13399899,1.16640348 C3.34915502,0.9 2.40734225,1.00636533 1.77946707,1.4776575 C0.994623095,2.10604706 0.837654326,3.0486314 1.15159189,3.99701575 L3.03521743,10.4379975 C3.03521743,10.5950949 3.34915502,10.7521922 3.50612381,10.7521922 L16.6915026,11.5376792 C16.6915026,11.5376792 17.1624089,11.5376792 17.1624089,12.0089713 C17.1624089,12.4744748 16.6915026,12.4744748 16.6915026,12.4744748 Z"></path>
+                        </svg>
+                    </button>
                 </div>
-
-            </footer>
-
+            </div>
         </main>
-
-
-        <!-- =====================================================
-             LISTA DE MEMBROS
-             ===================================================== -->
-
-        <aside class="members-sidebar">
-
-            <div class="members-header">
-                <span>MEMBROS</span>
-                <strong>4</strong>
-            </div>
-
-
-            <section class="members-section">
-
-                <div class="members-section-title">
-                    ONLINE — 4
-                </div>
-
-
-                <div class="member">
-
-                    <div class="member-avatar avatar-green">
-                        R
-                        <span class="member-status online"></span>
-                    </div>
-
-                    <div class="member-info">
-                        <strong>RibasDEV</strong>
-                        <span>Desenvolvendo Node.GG</span>
-                    </div>
-
-                </div>
-
-
-                <div class="member">
-
-                    <div class="member-avatar avatar-blue">
-                        J
-                        <span class="member-status online"></span>
-                    </div>
-
-                    <div class="member-info">
-                        <strong>Jaguaringa_99</strong>
-                        <span>WebGL / 3D</span>
-                    </div>
-
-                </div>
-
-
-                <div class="member">
-
-                    <div class="member-avatar avatar-orange">
-                        S
-                        <span class="member-status dnd"></span>
-                    </div>
-
-                    <div class="member-info">
-                        <strong>SquadLeader</strong>
-                        <span>Clash Royale</span>
-                    </div>
-
-                </div>
-
-
-                <div class="member">
-
-                    <div class="member-avatar avatar-purple">
-                        N
-                        <span class="member-status idle"></span>
-                    </div>
-
-                    <div class="member-info">
-                        <strong>NodeBot</strong>
-                        <span>Automação</span>
-                    </div>
-
-                </div>
-
-            </section>
-
-        </aside>
-
     </div>
 
+    <script src="chat.js"></script>
 </body>
 </html>
