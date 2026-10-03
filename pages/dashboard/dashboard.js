@@ -1,6 +1,7 @@
 // pages/dashboard/dashboard.js
 (function () {
   const API_BASE = window.API_BASE || '/api';
+  let refreshInterval = null;
   
   const state = {
     currentUser: null,
@@ -50,53 +51,67 @@
     return initialsFromName(user.displayName || user.username || 'User');
   }
 
+  function handleLogout() {
+    if (refreshInterval) clearInterval(refreshInterval);
+    localStorage.removeItem('sessionToken');
+    window.location.href = '../login/index.html';
+  }
+
   async function fetchJson(url, options = {}) {
     const token = localStorage.getItem('sessionToken') || '';
     
     if (!token) {
-      window.location.href = '../login/index.html';
-      return;
+      handleLogout();
+      throw new Error('Sessão expirada');
     }
 
     const headers = {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
+      'Authorization': `Bearer ${token}`,
+      ...(options.headers || {})
     };
 
     const startTime = performance.now();
-    const res = await fetch(url, {
-      ...options,
-      headers,
-      credentials: 'include'
-    });
-    
-    state.pingMs = Math.round(performance.now() - startTime);
-    updateStatsUI();
+    try {
+      const res = await fetch(url, {
+        ...options,
+        headers,
+        credentials: 'include'
+      });
+      
+      state.pingMs = Math.round(performance.now() - startTime);
+      updateStatsUI();
 
-    if (res.status === 401 || res.status === 403) {
-      localStorage.removeItem('sessionToken');
-      window.location.href = '../login/index.html';
-      return;
-    }
-
-    if (!res.ok) {
-      let msg = 'Erro ao carregar dados';
-      try {
-        const errData = await res.json();
-        msg = errData.error || errData.message || msg;
-      } catch (err) {
-        // noop
+      if (res.status === 401 || res.status === 403) {
+        handleLogout();
+        throw new Error('Não autorizado');
       }
-      throw new Error(msg);
-    }
 
-    return res.json();
+      if (!res.ok) {
+        let msg = 'Erro ao carregar dados';
+        try {
+          const errData = await res.json();
+          msg = errData.error || errData.message || msg;
+        } catch (err) {
+          // noop
+        }
+        throw new Error(msg);
+      }
+
+      return await res.json();
+    } catch (err) {
+      if (err.message === 'Failed to fetch') {
+        state.pingMs = 0;
+        updateStatsUI();
+      }
+      throw err;
+    }
   }
 
   function updateStatsUI() {
     if (els.onlineCount) els.onlineCount.textContent = state.onlineUsers.length;
     if (els.friendsCount) els.friendsCount.textContent = state.friends.length;
-    if (els.pingValue) els.pingValue.textContent = `${state.pingMs} ms`;
+    if (els.pingValue) els.pingValue.textContent = state.pingMs > 0 ? `${state.pingMs} ms` : 'Offline';
   }
 
   function buildUserCard(user) {
@@ -108,8 +123,8 @@
 
     if (user.isRequest) {
       actionButtons = `
-        <button class="btn-action primary" data-action="accept-request" data-id="${user.requestId}">Aceitar</button>
-        <button class="btn-action secondary" data-action="decline-request" data-id="${user.requestId}">Recusar</button>
+        <button class="btn-action primary" data-action="accept-request" data-id="${escapeHtml(user.requestId)}">Aceitar</button>
+        <button class="btn-action secondary" data-action="decline-request" data-id="${escapeHtml(user.requestId)}">Recusar</button>
       `;
     } else {
       actionButtons = `
@@ -154,35 +169,35 @@
   }
 
   function getFilteredUsers() {
-    const map = new Map();
-
-    // Adiciona Amigos
-    state.friends.forEach(f => {
-      const uname = f.username || f.user2 || f.user1;
-      if (uname && uname !== state.currentUser?.username) {
-        map.set(uname, { ...f, username: uname, isFriend: true, status: f.status || 'online' });
-      }
-    });
-
-    // Adiciona Utilizadores Online
-    state.onlineUsers.forEach(u => {
-      if (u.username && u.username !== state.currentUser?.username) {
-        const existing = map.get(u.username);
-        map.set(u.username, { ...existing, ...u, status: 'online' });
-      }
-    });
-
-    // Adiciona Pedidos Pendentes
+    // Pedidos pendentes recebem prioridade na aba de Pedidos
     if (state.filter === 'requests') {
       return state.friendRequests.map(r => ({
-        requestId: r.id,
-        username: r.sender,
-        displayName: r.sender,
+        requestId: r.id || r._id,
+        username: r.sender || r.username,
+        displayName: r.senderDisplayName || r.sender || r.username,
         isRequest: true,
         status: 'online',
         bio: 'Enviou-lhe um pedido de amizade'
       }));
     }
+
+    const map = new Map();
+
+    // 1. Mapeia Amigos
+    state.friends.forEach(f => {
+      const uname = f.username || f.user2 || f.user1;
+      if (uname && uname !== state.currentUser?.username) {
+        map.set(uname, { ...f, username: uname, isFriend: true, status: f.status || 'offline' });
+      }
+    });
+
+    // 2. Mapeia Usuários Online (Merge com amigos ou cria novos)
+    state.onlineUsers.forEach(u => {
+      if (u.username && u.username !== state.currentUser?.username) {
+        const existing = map.get(u.username) || { isFriend: false };
+        map.set(u.username, { ...existing, ...u, status: 'online' });
+      }
+    });
 
     let list = Array.from(map.values());
 
@@ -201,6 +216,7 @@
   }
 
   function renderUsers() {
+    if (!els.usersContainer) return;
     const list = getFilteredUsers();
 
     if (!list.length) {
@@ -218,6 +234,8 @@
   }
 
   function bindUserActions() {
+    if (!els.usersContainer) return;
+
     els.usersContainer.addEventListener('click', async (event) => {
       const actionEl = event.target.closest('[data-action]');
       if (!actionEl) return;
@@ -260,9 +278,9 @@
       const res = await fetchJson(`${API_BASE}/auth/me`);
       if (res && res.user) {
         state.currentUser = res.user;
-        els.userDisplayName.textContent = res.user.displayName || res.user.username;
-        els.userUsername.textContent = `@${res.user.username}`;
-        els.userAvatarText.textContent = getAvatarText(res.user);
+        if (els.userDisplayName) els.userDisplayName.textContent = res.user.displayName || res.user.username;
+        if (els.userUsername) els.userUsername.textContent = `@${res.user.username}`;
+        if (els.userAvatarText) els.userAvatarText.textContent = getAvatarText(res.user);
       }
     } catch (err) {
       console.error('Erro ao carregar perfil:', err);
@@ -295,17 +313,19 @@
   }
 
   function openModal(type) {
+    if (!els.modal || !els.modalIframe) return;
     els.modal.style.display = 'flex';
     if (type === 'chat') {
-      els.modalTitle.textContent = 'Node.GG - Chat';
-      els.modalIframe.src = '../chat/index.html';
+      if (els.modalTitle) els.modalTitle.textContent = 'Node.GG - Chat';
+      els.modalIframe.src = './chat/index.html'; // Corrigido caminho do iframe do chat
     } else if (type === 'settings') {
-      els.modalTitle.textContent = 'Node.GG - Configurações';
+      if (els.modalTitle) els.modalTitle.textContent = 'Node.GG - Configurações';
       els.modalIframe.src = '../settings/index.html';
     }
   }
 
   function closeModal() {
+    if (!els.modal || !els.modalIframe) return;
     els.modal.style.display = 'none';
     els.modalIframe.src = '';
   }
@@ -323,10 +343,16 @@
         tabs.forEach(btn => btn.classList.remove('active'));
         tab.classList.add('active');
 
-        const label = tab.textContent.trim().toLowerCase();
-        if (label === 'pedidos') state.filter = 'requests';
-        else if (label === 'online') state.filter = 'online';
-        else state.filter = 'all';
+        const tabFilter = tab.getAttribute('data-tab');
+        if (tabFilter) {
+          state.filter = tabFilter;
+        } else {
+          // Fallback caso não tenha data-tab
+          const label = tab.textContent.trim().toLowerCase();
+          if (label.includes('pedidos')) state.filter = 'requests';
+          else if (label.includes('online')) state.filter = 'online';
+          else state.filter = 'all';
+        }
 
         renderUsers();
       });
@@ -347,7 +373,7 @@
     await refreshAllData();
 
     // Atualização periódica a cada 10 segundos
-    setInterval(refreshAllData, 10000);
+    refreshInterval = setInterval(refreshAllData, 10000);
   }
 
   init();
