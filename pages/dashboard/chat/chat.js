@@ -341,7 +341,7 @@
       }
     }
 
-    // Intervalo de Polling (a cada 3s atualiza conversas e mensagens)
+    // Intervalo de Polling (a cada 3s atualiza conversas e mensagens).
     setInterval(async () => {
       await loadConversations();
       if (state.activeConversation) {
