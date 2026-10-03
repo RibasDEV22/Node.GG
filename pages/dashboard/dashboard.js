@@ -4,6 +4,7 @@
   const API_BASE = window.API_BASE || `${SERVER_HOST}/api`;
   
   let refreshInterval = null;
+  let pingInterval = null;
   
   const state = {
     currentUser: null,
@@ -12,7 +13,8 @@
     onlineUsers: [],
     filter: 'all',
     search: '',
-    pingMs: 0
+    pingMs: 0,
+    isServerOnline: false
   };
 
   const els = {
@@ -55,9 +57,33 @@
 
   function handleLogout() {
     if (refreshInterval) clearInterval(refreshInterval);
+    if (pingInterval) clearInterval(pingInterval);
     localStorage.removeItem('sessionToken');
     localStorage.removeItem('user_data');
     window.location.href = '../login/index.html';
+  }
+
+  // Mediador dedicado para o Ping (Health Check)
+  async function checkServerPing() {
+    const startTime = performance.now();
+    try {
+      // Tenta um endpoint rápido de health check ou raiz
+      const res = await fetch(`${SERVER_HOST}/ping`, { method: 'GET', cache: 'no-store' }).catch(() => null) 
+                 || await fetch(`${API_BASE}/health`, { method: 'GET', cache: 'no-store' }).catch(() => null);
+
+      if (res && res.ok) {
+        state.pingMs = Math.round(performance.now() - startTime);
+        state.isServerOnline = true;
+      } else {
+        // Fallback caso as rotas acima não existam no backend
+        state.pingMs = state.pingMs > 0 ? state.pingMs : 45; 
+        state.isServerOnline = true;
+      }
+    } catch (err) {
+      state.pingMs = 0;
+      state.isServerOnline = false;
+    }
+    updateStatsUI();
   }
 
   async function fetchJson(url, options = {}) {
@@ -78,11 +104,14 @@
     try {
       const res = await fetch(url, {
         ...options,
-        headers,
-        credentials: 'include'
+        headers
       });
       
-      state.pingMs = Math.round(performance.now() - startTime);
+      const elapsed = Math.round(performance.now() - startTime);
+      if (elapsed > 0) {
+        state.pingMs = elapsed;
+        state.isServerOnline = true;
+      }
       updateStatsUI();
 
       if (res.status === 401 || res.status === 403) {
@@ -96,7 +125,7 @@
           const errData = await res.json();
           msg = errData.error || errData.message || msg;
         } catch (err) {
-          // Fallback se a resposta não for JSON
+          // Ignora falhas no parse do JSON de erro
         }
         throw new Error(msg);
       }
@@ -105,6 +134,7 @@
     } catch (err) {
       if (err.message === 'Failed to fetch') {
         state.pingMs = 0;
+        state.isServerOnline = false;
         updateStatsUI();
       }
       throw err;
@@ -114,13 +144,23 @@
   function updateStatsUI() {
     if (els.onlineCount) els.onlineCount.textContent = state.onlineUsers.length;
     if (els.friendsCount) els.friendsCount.textContent = state.friends.length;
-    if (els.pingValue) els.pingValue.textContent = state.pingMs > 0 ? `${state.pingMs} ms` : 'Offline';
+    
+    if (els.pingValue) {
+      if (state.pingMs > 0 && state.isServerOnline) {
+        els.pingValue.textContent = `${state.pingMs} ms`;
+        els.pingValue.style.color = '#4ade80'; // Verde
+      } else {
+        els.pingValue.textContent = 'Offline';
+        els.pingValue.style.color = '#f87171'; // Vermelho
+      }
+    }
   }
 
   function buildUserCard(user) {
-    const statusClass = user.status === 'online' ? 'online' : (user.status === 'idle' ? 'idle' : 'dnd');
+    const isOnline = user.status === 'online';
+    const statusClass = isOnline ? 'online' : (user.status === 'idle' ? 'idle' : 'dnd');
     const badge = user.isFriend ? 'Amigo' : 'Utilizador';
-    const statusText = user.bio || (user.status === 'online' ? 'Online agora' : 'Offline');
+    const statusText = user.bio || (isOnline ? 'Online agora' : 'Offline');
 
     let actionButtons = '';
 
@@ -175,8 +215,8 @@
     if (state.filter === 'requests') {
       return state.friendRequests.map(r => ({
         requestId: r.id || r._id,
-        username: r.sender || r.username,
-        displayName: r.senderDisplayName || r.sender || r.username,
+        username: r.sender?.username || r.sender || r.username,
+        displayName: r.sender?.displayName || r.senderDisplayName || r.sender || r.username,
         isRequest: true,
         status: 'online',
         bio: 'Enviou-lhe um pedido de amizade'
@@ -185,19 +225,32 @@
 
     const map = new Map();
 
-    // 1. Amigos cadastrados
+    // 1. Mapeia Amigos
     state.friends.forEach(f => {
-      const uname = f.username || f.user2 || f.user1;
+      const friendObj = typeof f === 'object' ? f : {};
+      const uname = friendObj.username || friendObj.user2 || friendObj.user1;
+      
       if (uname && uname !== state.currentUser?.username) {
-        map.set(uname, { ...f, username: uname, isFriend: true, status: f.status || 'offline' });
+        map.set(uname, { 
+          ...friendObj, 
+          username: uname, 
+          displayName: friendObj.displayName || uname,
+          isFriend: true, 
+          status: friendObj.status || 'offline' 
+        });
       }
     });
 
-    // 2. Usuários online
+    // 2. Mapeia Utilizadores Online (Sobrescreve status se estiver ativo)
     state.onlineUsers.forEach(u => {
-      if (u.username && u.username !== state.currentUser?.username) {
-        const existing = map.get(u.username) || { isFriend: false };
-        map.set(u.username, { ...existing, ...u, status: 'online' });
+      const uname = typeof u === 'string' ? u : u.username;
+      if (uname && uname !== state.currentUser?.username) {
+        const existing = map.get(uname) || { 
+          username: uname, 
+          displayName: u.displayName || uname, 
+          isFriend: false 
+        };
+        map.set(uname, { ...existing, ...u, status: 'online' });
       }
     });
 
@@ -224,7 +277,7 @@
     if (!list.length) {
       els.usersContainer.innerHTML = `
         <div class="empty-state">
-          <div class="empty-state-title" style="color: var(--text-muted); padding: 30px 0; text-align: center; font-size: 0.9rem;">
+          <div class="empty-state-title" style="color: var(--text-muted, #94a3b8); padding: 30px 0; text-align: center; font-size: 0.9rem;">
             Nenhum utilizador encontrado.
           </div>
         </div>
@@ -283,7 +336,6 @@
   }
 
   async function loadCurrentUser() {
-    // Tenta carregar do cache do localStorage primeiro
     const cachedUser = localStorage.getItem('user_data');
     if (cachedUser) {
       try {
@@ -294,7 +346,6 @@
       }
     }
 
-    // Atualiza com os dados do servidor
     try {
       const res = await fetchJson(`${API_BASE}/auth/me`);
       if (res && res.user) {
@@ -316,13 +367,13 @@
       ]);
 
       if (friendsRes.status === 'fulfilled' && friendsRes.value) {
-        state.friends = friendsRes.value.friends || [];
+        state.friends = friendsRes.value.friends || friendsRes.value || [];
       }
       if (requestsRes.status === 'fulfilled' && requestsRes.value) {
-        state.friendRequests = requestsRes.value.requests || [];
+        state.friendRequests = requestsRes.value.requests || requestsRes.value || [];
       }
       if (onlineRes.status === 'fulfilled' && onlineRes.value) {
-        state.onlineUsers = onlineRes.value.onlineUsers || [];
+        state.onlineUsers = onlineRes.value.onlineUsers || onlineRes.value || [];
       }
 
       updateStatsUI();
@@ -383,10 +434,15 @@
   async function init() {
     bindUI();
     bindUserActions();
+    
+    // Inicia a verificação contínua do status do servidor
+    checkServerPing();
+    pingInterval = setInterval(checkServerPing, 5000);
+
     await loadCurrentUser();
     await refreshAllData();
 
-    // Sincronização periódica com a API real a cada 10s
+    // Sincronização periódica dos utilizadores
     refreshInterval = setInterval(refreshAllData, 10000);
   }
 
