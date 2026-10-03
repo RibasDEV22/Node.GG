@@ -1,34 +1,31 @@
-// pages/dashboard/dashboard.js
+// pages/chat/chat.js
 (function () {
   const API_BASE = window.API_BASE || '/api';
-  
+  const storageKey = 'nodegg.chat.state';
+
   const state = {
     currentUser: null,
-    friends: [],
-    friendRequests: [],
-    onlineUsers: [],
-    filter: 'all',
-    search: '',
-    pingMs: 0
+    activeConversation: null,
+    conversations: [],
+    messages: []
   };
 
   const els = {
-    userDisplayName: document.getElementById('user-display-name'),
-    userUsername: document.getElementById('user-username'),
-    userAvatarText: document.getElementById('user-avatar-text'),
-    onlineCount: document.getElementById('online-count'),
-    friendsCount: document.getElementById('friends-count'),
-    pingValue: document.getElementById('ping-value'),
-    usersContainer: document.getElementById('users-container'),
-    modal: document.getElementById('app-modal'),
-    modalIframe: document.getElementById('modal-iframe'),
-    modalTitle: document.querySelector('.modal-title'),
-    closeModalBtn: document.getElementById('close-modal-btn'),
-    searchInput: document.getElementById('search-input')
+    searchInput: document.getElementById('search-input'),
+    conversationsList: document.getElementById('conversations-list'),
+    chatArea: document.getElementById('chat-area'),
+    messagesContainer: document.getElementById('messages-container'),
+    chatHeader: document.getElementById('chat-header'),
+    chatAvatar: document.getElementById('chat-avatar'),
+    chatUsername: document.getElementById('chat-username'),
+    chatStatus: document.getElementById('chat-status'),
+    chatInputArea: document.getElementById('chat-input-area'),
+    messageInput: document.getElementById('message-input'),
+    sendBtn: document.getElementById('send-btn')
   };
 
-  function initialsFromName(name = '') {
-    return name
+  function initials(name = '') {
+    return (name || '')
       .split(' ')
       .filter(Boolean)
       .slice(0, 2)
@@ -37,8 +34,13 @@
       .slice(0, 2) || 'U';
   }
 
-  function escapeHtml(str = '') {
-    return String(str || '')
+  function formatTime(ts) {
+    const date = new Date(ts || Date.now());
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function safeText(value = '') {
+    return String(value || '')
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
@@ -46,15 +48,11 @@
       .replace(/'/g, '&#039;');
   }
 
-  function getAvatarText(user) {
-    return initialsFromName(user.displayName || user.username || 'User');
-  }
-
   async function fetchJson(url, options = {}) {
     const token = localStorage.getItem('sessionToken') || '';
-    
+
     if (!token) {
-      window.location.href = '../login/index.html';
+      redirectToLogin();
       return;
     }
 
@@ -63,24 +61,20 @@
       'Authorization': `Bearer ${token}`
     };
 
-    const startTime = performance.now();
     const res = await fetch(url, {
       ...options,
       headers,
       credentials: 'include'
     });
-    
-    state.pingMs = Math.round(performance.now() - startTime);
-    updateStatsUI();
 
     if (res.status === 401 || res.status === 403) {
       localStorage.removeItem('sessionToken');
-      window.location.href = '../login/index.html';
+      redirectToLogin();
       return;
     }
 
     if (!res.ok) {
-      let msg = 'Erro ao carregar dados';
+      let msg = 'Erro na requisição';
       try {
         const errData = await res.json();
         msg = errData.error || errData.message || msg;
@@ -93,166 +87,203 @@
     return res.json();
   }
 
-  function updateStatsUI() {
-    if (els.onlineCount) els.onlineCount.textContent = state.onlineUsers.length;
-    if (els.friendsCount) els.friendsCount.textContent = state.friends.length;
-    if (els.pingValue) els.pingValue.textContent = `${state.pingMs} ms`;
+  function redirectToLogin() {
+    if (window.top !== window.self) {
+      window.top.location.href = '../login/index.html';
+    } else {
+      window.location.href = '../login/index.html';
+    }
   }
 
-  function buildUserCard(user) {
-    const statusClass = user.status === 'online' ? 'online' : (user.status === 'idle' ? 'idle' : 'dnd');
-    const badge = user.badge || (user.isFriend ? 'Amigo' : 'Utilizador');
-    const statusText = user.bio || (user.status === 'online' ? 'Online agora' : 'Offline');
-
-    let actionButtons = '';
-
-    if (user.isRequest) {
-      actionButtons = `
-        <button class="btn-action primary" data-action="accept-request" data-id="${user.requestId}">Aceitar</button>
-        <button class="btn-action secondary" data-action="decline-request" data-id="${user.requestId}">Recusar</button>
-      `;
-    } else {
-      actionButtons = `
-        <button class="btn-action primary" data-action="chat" data-username="${escapeHtml(user.username)}">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-          </svg>
-          Conversar
-        </button>
-        ${!user.isFriend ? `
-          <button class="btn-action secondary" data-action="add-friend" data-username="${escapeHtml(user.username)}">
-            Adicionar
-          </button>
-        ` : ''}
-      `;
+  function scrollToBottom() {
+    if (els.messagesContainer) {
+      els.messagesContainer.scrollTop = els.messagesContainer.scrollHeight;
     }
+  }
 
+  function saveState() {
+    localStorage.setItem(storageKey, JSON.stringify({
+      activeConversation: state.activeConversation
+    }));
+  }
+
+  function buildConversationItem(user) {
+    const isActive = state.activeConversation === user.username;
     return `
-      <div class="user-card" data-username="${escapeHtml(user.username || '')}">
-        <div class="user-main-info">
-          <div class="avatar-wrapper">
-            <div class="avatar-placeholder alt1">
-              ${escapeHtml(getAvatarText(user))}
-            </div>
-            <span class="status-indicator ${statusClass}"></span>
-          </div>
-
-          <div class="user-details">
-            <div class="user-title-row">
-              <span class="user-title">${escapeHtml(user.displayName || user.username || 'Utilizador')}</span>
-              <span class="activity-badge badge-dev">${escapeHtml(badge)}</span>
-            </div>
-            <div class="user-status-text">${escapeHtml(statusText)}</div>
-          </div>
+      <button class="conversation-item ${isActive ? 'active' : ''}" data-user="${safeText(user.username)}">
+        <div class="avatar-small">${escapeHtml(initials(user.displayName || user.username))}</div>
+        <div class="conversation-info">
+          <div class="conversation-name">${safeText(user.displayName || user.username)}</div>
+          <div class="conversation-preview">${safeText(user.lastMessage || 'Sem mensagens recentes')}</div>
         </div>
-
-        <div class="user-card-actions">
-          ${actionButtons}
+        <div class="conversation-meta">
+          <span class="conversation-time">${safeText(user.time || '')}</span>
         </div>
-      </div>
+      </button>
     `;
   }
 
-  function getFilteredUsers() {
-    const map = new Map();
-
-    // Adiciona Amigos
-    state.friends.forEach(f => {
-      const uname = f.username || f.user2 || f.user1;
-      if (uname && uname !== state.currentUser?.username) {
-        map.set(uname, { ...f, username: uname, isFriend: true, status: f.status || 'online' });
-      }
-    });
-
-    // Adiciona Utilizadores Online
-    state.onlineUsers.forEach(u => {
-      if (u.username && u.username !== state.currentUser?.username) {
-        const existing = map.get(u.username);
-        map.set(u.username, { ...existing, ...u, status: 'online' });
-      }
-    });
-
-    // Adiciona Pedidos Pendentes
-    if (state.filter === 'requests') {
-      return state.friendRequests.map(r => ({
-        requestId: r.id,
-        username: r.sender,
-        displayName: r.sender,
-        isRequest: true,
-        status: 'online',
-        bio: 'Enviou-lhe um pedido de amizade'
-      }));
-    }
-
-    let list = Array.from(map.values());
-
-    if (state.filter === 'online') {
-      list = list.filter(u => u.status === 'online' || u.status === 'idle');
-    }
-
-    if (state.search) {
-      const q = state.search.toLowerCase();
-      list = list.filter(u =>
-        (u.displayName || u.username || '').toLowerCase().includes(q)
-      );
-    }
-
-    return list;
+  function escapeHtml(str) {
+    return safeText(str);
   }
 
-  function renderUsers() {
-    const list = getFilteredUsers();
+  function renderConversations() {
+    const search = (els.searchInput?.value || '').toLowerCase();
+    const list = (state.conversations || [])
+      .filter(conv => {
+        const name = (conv.displayName || conv.username || '').toLowerCase();
+        return name.includes(search) || (conv.username || '').toLowerCase().includes(search);
+      })
+      .sort((a, b) => (b.lastMessageAt || 0) - (a.lastMessageAt || 0));
 
     if (!list.length) {
-      els.usersContainer.innerHTML = `
-        <div class="empty-state">
-          <div class="empty-state-title" style="color: var(--text-muted); padding: 20px 0; text-align: center;">
-            Nenhum utilizador encontrado.
-          </div>
+      els.conversationsList.innerHTML = `
+        <div class="no-results" style="padding: 16px; text-align: center; color: var(--text-dim); font-size: 0.8rem;">
+          Nenhuma conversa encontrada.
         </div>
       `;
       return;
     }
 
-    els.usersContainer.innerHTML = list.map(buildUserCard).join('');
+    els.conversationsList.innerHTML = list.map(buildConversationItem).join('');
   }
 
-  function bindUserActions() {
-    els.usersContainer.addEventListener('click', async (event) => {
-      const actionEl = event.target.closest('[data-action]');
-      if (!actionEl) return;
+  function renderMessages(messages = []) {
+    if (!messages.length) {
+      els.messagesContainer.innerHTML = `
+        <div class="empty-chat">
+          <div class="empty-chat-title">Nenhuma mensagem ainda</div>
+          <div class="empty-chat-subtitle">Envie uma mensagem para iniciar esta conversa!</div>
+        </div>
+      `;
+      return;
+    }
 
-      const action = actionEl.dataset.action;
-      const username = actionEl.dataset.username;
-      const requestId = actionEl.dataset.id;
+    els.messagesContainer.innerHTML = messages
+      .map(msg => {
+        const isMine = state.currentUser && (msg.sender === state.currentUser.username);
+        const bubbleClass = isMine ? 'outgoing' : 'incoming';
+        return `
+          <div class="message-row ${bubbleClass}">
+            <div class="message-bubble">
+              ${safeText(msg.content || '')}
+              <div class="message-meta">
+                <span>${safeText(formatTime(msg.timestamp || Date.now()))}</span>
+                ${isMine ? '<span class="read-check">✓</span>' : ''}
+              </div>
+            </div>
+          </div>
+        `;
+      })
+      .join('');
 
-      try {
-        if (action === 'chat') {
-          openModal('chat');
-        } else if (action === 'add-friend') {
-          await fetchJson(`${API_BASE}/friends/send-request`, {
-            method: 'POST',
-            body: JSON.stringify({ targetUsername: username })
-          });
-          alert('Pedido de amizade enviado!');
-          await refreshAllData();
-        } else if (action === 'accept-request') {
-          await fetchJson(`${API_BASE}/friends/accept-request`, {
-            method: 'POST',
-            body: JSON.stringify({ requestId })
-          });
-          await refreshAllData();
-        } else if (action === 'decline-request') {
-          await fetchJson(`${API_BASE}/friends/decline-request`, {
-            method: 'POST',
-            body: JSON.stringify({ requestId })
-          });
-          await refreshAllData();
-        }
-      } catch (err) {
-        alert(err.message || 'Erro ao processar ação');
-      }
+    scrollToBottom();
+  }
+
+  function setActiveConversation(username, displayName = '') {
+    if (!username) return;
+
+    state.activeConversation = username;
+    
+    if (els.chatArea) els.chatArea.style.display = 'none';
+    if (els.chatHeader) els.chatHeader.style.display = 'flex';
+    if (els.chatInputArea) els.chatInputArea.style.display = 'flex';
+
+    els.chatUsername.textContent = displayName || username;
+    els.chatAvatar.textContent = initials(displayName || username);
+    els.chatStatus.textContent = 'online';
+
+    const conv = state.conversations.find(c => c.username === username);
+    if (conv) {
+      conv.unread = 0;
+    }
+
+    renderConversations();
+    saveState();
+    loadHistory(username);
+  }
+
+  function bindConversationList() {
+    els.conversationsList.addEventListener('click', (event) => {
+      const target = event.target.closest('[data-user]');
+      if (!target) return;
+      const username = target.dataset.user;
+      const user = state.conversations.find(c => c.username === username);
+      setActiveConversation(username, user?.displayName || username);
     });
+  }
+
+  async function loadHistory(username) {
+    try {
+      const res = await fetchJson(`${API_BASE}/messages/history?with=${encodeURIComponent(username)}`);
+      state.messages = res.messages || [];
+      renderMessages(state.messages);
+    } catch (err) {
+      console.error('Erro ao carregar histórico:', err);
+      state.messages = [];
+      renderMessages([]);
+    }
+  }
+
+  async function loadConversations() {
+    try {
+      const res = await fetchJson(`${API_BASE}/messages/conversations`);
+      state.conversations = res.conversations || [];
+      renderConversations();
+    } catch (err) {
+      console.error('Erro ao carregar conversas:', err);
+      state.conversations = [];
+      renderConversations();
+    }
+  }
+
+  async function sendMessage() {
+    const text = els.messageInput.value.trim();
+    if (!text || !state.activeConversation) return;
+
+    const payload = {
+      receiver: state.activeConversation,
+      content: text
+    };
+
+    els.messageInput.value = '';
+
+    try {
+      const res = await fetchJson(`${API_BASE}/messages/send`, {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+
+      const msg = {
+        id: res.messageId || Date.now(),
+        sender: state.currentUser.username,
+        receiver: state.activeConversation,
+        content: text,
+        timestamp: Date.now()
+      };
+
+      state.messages.push(msg);
+      renderMessages(state.messages);
+
+      const conv = state.conversations.find(c => c.username === state.activeConversation);
+      if (conv) {
+        conv.lastMessage = text;
+        conv.lastMessageAt = Date.now();
+        conv.time = formatTime(Date.now());
+      } else {
+        state.conversations.unshift({
+          username: state.activeConversation,
+          displayName: state.activeConversation,
+          lastMessage: text,
+          lastMessageAt: Date.now(),
+          time: formatTime(Date.now())
+        });
+      }
+
+      renderConversations();
+    } catch (err) {
+      alert(err.message || 'Erro ao enviar mensagem');
+    }
   }
 
   async function loadCurrentUser() {
@@ -260,94 +291,63 @@
       const res = await fetchJson(`${API_BASE}/auth/me`);
       if (res && res.user) {
         state.currentUser = res.user;
-        els.userDisplayName.textContent = res.user.displayName || res.user.username;
-        els.userUsername.textContent = `@${res.user.username}`;
-        els.userAvatarText.textContent = getAvatarText(res.user);
       }
     } catch (err) {
-      console.error('Erro ao carregar perfil:', err);
+      console.error('Erro ao carregar utilizador atual:', err);
     }
   }
 
-  async function refreshAllData() {
-    try {
-      const [friendsRes, requestsRes, onlineRes] = await Promise.allSettled([
-        fetchJson(`${API_BASE}/friends/list`),
-        fetchJson(`${API_BASE}/friends/requests`),
-        fetchJson(`${API_BASE}/friends/online`)
-      ]);
-
-      if (friendsRes.status === 'fulfilled' && friendsRes.value) {
-        state.friends = friendsRes.value.friends || [];
-      }
-      if (requestsRes.status === 'fulfilled' && requestsRes.value) {
-        state.friendRequests = requestsRes.value.requests || [];
-      }
-      if (onlineRes.status === 'fulfilled' && onlineRes.value) {
-        state.onlineUsers = onlineRes.value.onlineUsers || [];
-      }
-
-      updateStatsUI();
-      renderUsers();
-    } catch (err) {
-      console.error('Erro ao atualizar dados:', err);
-    }
-  }
-
-  function openModal(type) {
-    els.modal.style.display = 'flex';
-    if (type === 'chat') {
-      els.modalTitle.textContent = 'Node.GG - Chat';
-      els.modalIframe.src = '../chat/index.html';
-    } else if (type === 'settings') {
-      els.modalTitle.textContent = 'Node.GG - Configurações';
-      els.modalIframe.src = '../settings/index.html';
-    }
-  }
-
-  function closeModal() {
-    els.modal.style.display = 'none';
-    els.modalIframe.src = '';
-  }
-
-  function bindUI() {
-    if (els.closeModalBtn) {
-      els.closeModalBtn.addEventListener('click', closeModal);
+  function bindChatControls() {
+    if (els.sendBtn) {
+      els.sendBtn.addEventListener('click', sendMessage);
     }
 
-    window.openModal = openModal;
-
-    const tabs = document.querySelectorAll('.tab-btn');
-    tabs.forEach(tab => {
-      tab.addEventListener('click', () => {
-        tabs.forEach(btn => btn.classList.remove('active'));
-        tab.classList.add('active');
-
-        const label = tab.textContent.trim().toLowerCase();
-        if (label === 'pedidos') state.filter = 'requests';
-        else if (label === 'online') state.filter = 'online';
-        else state.filter = 'all';
-
-        renderUsers();
+    if (els.messageInput) {
+      els.messageInput.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' && !event.shiftKey) {
+          event.preventDefault();
+          sendMessage();
+        }
       });
-    });
+    }
 
     if (els.searchInput) {
-      els.searchInput.addEventListener('input', (e) => {
-        state.search = e.target.value.trim().toLowerCase();
-        renderUsers();
+      els.searchInput.addEventListener('input', () => {
+        renderConversations();
       });
     }
   }
 
   async function init() {
-    bindUI();
-    bindUserActions();
     await loadCurrentUser();
-    await refreshAllData();
+    await loadConversations();
 
-    // Atualização periódica a cada 10 segundos
-    setInterval(refreshAllData, 10000);
+    bindConversationList();
+    bindChatControls();
+
+    // Recupera conversa ativa guardada se existir
+    const saved = localStorage.getItem(storageKey);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed.activeConversation) {
+          const exists = state.conversations.find(c => c.username === parsed.activeConversation);
+          if (exists) {
+            setActiveConversation(exists.username, exists.displayName || exists.username);
+          }
+        }
+      } catch (e) {
+        // noop
+      }
+    }
+
+    // Intervalo de Polling (a cada 3s atualiza conversas e mensagens)
+    setInterval(async () => {
+      await loadConversations();
+      if (state.activeConversation) {
+        await loadHistory(state.activeConversation);
+      }
+    }, 3000);
   }
 
   init();
