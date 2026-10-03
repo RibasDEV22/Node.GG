@@ -1,82 +1,211 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
     <title>Node.GG - Chat</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+
+    <link
+        rel="preconnect"
+        href="https://fonts.googleapis.com"
+    >
+
+    <link
+        rel="preconnect"
+        href="https://fonts.gstatic.com"
+        crossorigin
+    >
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet"
+    >
+
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
 </head>
+
 <body>
+
     <div class="chat-container">
+
         <!-- Sidebar de Conversas -->
         <aside class="chat-sidebar">
+
             <div class="chat-header">
                 <h2>Mensagens</h2>
             </div>
 
             <div class="search-bar">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="11" cy="11" r="8"></circle>
-                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+
+                <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                >
+                    <circle
+                        cx="11"
+                        cy="11"
+                        r="8"
+                    ></circle>
+
+                    <line
+                        x1="21"
+                        y1="21"
+                        x2="16.65"
+                        y2="16.65"
+                    ></line>
                 </svg>
-                <input type="text" id="search-input" placeholder="Buscar conversa..." />
+
+                <!-- ID exclusivo do chat -->
+                <input
+                    type="text"
+                    id="chat-search-input"
+                    placeholder="Buscar conversa..."
+                    autocomplete="off"
+                >
+
             </div>
 
-            <div class="conversations-list" id="conversations-list">
-                <!-- Preenchido via JS. -->
+            <div
+                class="conversations-list"
+                id="conversations-list"
+            >
+                <!-- Preenchido via JS -->
             </div>
+
         </aside>
 
         <!-- Área de Chat -->
         <main class="chat-main">
+
             <!-- Estado Inicial Sem Conversa -->
-            <div class="chat-area" id="chat-area">
+            <div
+                class="chat-area"
+                id="chat-area"
+            >
+
                 <div class="chat-empty">
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+
+                    <svg
+                        width="48"
+                        height="48"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.5"
+                    >
+                        <path
+                            d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+                        ></path>
                     </svg>
-                    <span>Selecione uma conversa para começar</span>
+
+                    <span>
+                        Selecione uma conversa para começar
+                    </span>
+
                 </div>
+
             </div>
 
             <!-- Cabeçalho da Conversa Ativa -->
-            <div class="chat-header-active" id="chat-header" style="display: none;">
+            <div
+                class="chat-header-active"
+                id="chat-header"
+                style="display: none;"
+            >
+
                 <div class="chat-header-info">
-                    <div class="avatar-small" id="chat-avatar">U</div>
-                    <div>
-                        <h3 id="chat-username">Usuário</h3>
-                        <span class="status-text" id="chat-status">offline</span>
+
+                    <div
+                        class="avatar-small"
+                        id="chat-avatar"
+                    >
+                        U
                     </div>
+
+                    <div>
+
+                        <h3 id="chat-username">
+                            Usuário
+                        </h3>
+
+                        <span
+                            class="status-text"
+                            id="chat-status"
+                        >
+                            offline
+                        </span>
+
+                    </div>
+
                 </div>
+
             </div>
 
             <!-- Contentor de Mensagens -->
-            <div class="messages-container" id="messages-container">
+            <div
+                class="messages-container"
+                id="messages-container"
+            >
                 <!-- Preenchido via JS -->
             </div>
 
-            <!-- Área de Envio de Mensagem -->
-            <div class="chat-input-area" id="chat-input-area" style="display: none;">
+            <!-- Área de Envio -->
+            <div
+                class="chat-input-area"
+                id="chat-input-area"
+                style="display: none;"
+            >
+
                 <div class="input-wrapper">
-                    <input 
-                        type="text" 
-                        id="message-input" 
-                        placeholder="Escreva uma mensagem..." 
+
+                    <input
+                        type="text"
+                        id="message-input"
+                        placeholder="Escreva uma mensagem..."
                         autocomplete="off"
-                    />
-                    <button class="send-btn" id="send-btn" title="Enviar (Enter)">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path>
+                    >
+
+                    <button
+                        class="send-btn"
+                        id="send-btn"
+                        title="Enviar (Enter)"
+                    >
+
+                        <svg
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill="currentColor"
+                        >
+                            <path
+                                d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"
+                            ></path>
                         </svg>
+
                     </button>
+
                 </div>
+
             </div>
+
         </main>
+
     </div>
 
     <script src="chat.js"></script>
+
 </body>
 </html>
