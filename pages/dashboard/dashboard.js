@@ -212,6 +212,19 @@ document.addEventListener('DOMContentLoaded', () => {
         navItems:
             document.querySelectorAll(
                 '.nav-item'
+            ),
+
+        /*
+         * CHAT
+         */
+        chatPanel:
+            document.getElementById(
+                'dashboard-chat-panel'
+            ),
+
+        closeChatBtn:
+            document.getElementById(
+                'close-chat-btn'
             )
     };
 
@@ -226,6 +239,7 @@ document.addEventListener('DOMContentLoaded', () => {
         );
     }
 
+
     function getStoredUser() {
         const raw =
             localStorage.getItem(
@@ -238,6 +252,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             return JSON.parse(raw);
+
         } catch {
             localStorage.removeItem(
                 'user_data'
@@ -246,6 +261,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return null;
         }
     }
+
 
     function clearSession() {
         localStorage.removeItem(
@@ -273,7 +289,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const user =
             getStoredUser();
 
-        if (!token || !user || !user.username) {
+        if (
+            !token ||
+            !user ||
+            !user.username
+        ) {
             return false;
         }
 
@@ -285,6 +305,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         return true;
     }
+
 
     function redirectToLogin() {
         if (STATE.destroyed) {
@@ -321,6 +342,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!token) {
                 redirectToLogin();
+
                 throw new Error(
                     'Sessão não encontrada.'
                 );
@@ -351,7 +373,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         `${CONFIG.API_BASE}${endpoint}`,
                         {
                             ...options,
+
                             headers,
+
                             signal:
                                 controller.signal
                         }
@@ -384,6 +408,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return data;
 
             } catch (error) {
+
                 if (
                     error.name ===
                     'AbortError'
@@ -400,17 +425,20 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         },
 
+
         getFriendsList() {
             return this.request(
                 '/friends/list'
             );
         },
 
+
         getPendingRequests() {
             return this.request(
                 '/friends/requests'
             );
         },
+
 
         sendFriendRequest(
             targetUsername
@@ -419,12 +447,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 '/friends/send-request',
                 {
                     method: 'POST',
-                    body: JSON.stringify({
-                        targetUsername
-                    })
+
+                    body:
+                        JSON.stringify({
+                            targetUsername
+                        })
                 }
             );
         },
+
 
         acceptFriendRequest(
             requesterUsername
@@ -433,12 +464,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 '/friends/accept-request',
                 {
                     method: 'POST',
-                    body: JSON.stringify({
-                        requesterUsername
-                    })
+
+                    body:
+                        JSON.stringify({
+                            requesterUsername
+                        })
                 }
             );
         },
+
 
         rejectFriendRequest(
             requesterUsername
@@ -447,12 +481,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 '/friends/decline-request',
                 {
                     method: 'POST',
-                    body: JSON.stringify({
-                        requesterUsername
-                    })
+
+                    body:
+                        JSON.stringify({
+                            requesterUsername
+                        })
                 }
             );
         },
+
 
         removeFriend(
             friendUsername
@@ -461,12 +498,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 '/friends/remove',
                 {
                     method: 'POST',
-                    body: JSON.stringify({
-                        friendUsername
-                    })
+
+                    body:
+                        JSON.stringify({
+                            friendUsername
+                        })
                 }
             );
         },
+
 
         getOnlineUsers() {
             return this.request(
@@ -504,7 +544,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 STATE.userData.avatar;
 
             if (avatar) {
-                DOM.userAvatar.textContent = '';
+                DOM.userAvatar.textContent =
+                    '';
 
                 DOM.userAvatar.style.backgroundImage =
                     `url("${avatar}")`;
@@ -514,6 +555,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 DOM.userAvatar.style.backgroundPosition =
                     'center';
+
             } else {
                 DOM.userAvatar.textContent =
                     (
@@ -532,6 +574,75 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     /* =====================================================
+       CHAT
+    ===================================================== */
+
+    function openChatWithFriend(
+        username,
+        displayName = ''
+    ) {
+        const cleanUsername =
+            String(
+                username || ''
+            ).trim();
+
+        if (!cleanUsername) {
+            return;
+        }
+
+        /*
+         * Abre visualmente o painel.
+         */
+        if (DOM.chatPanel) {
+            DOM.chatPanel.classList.add(
+                'open'
+            );
+        }
+
+        /*
+         * O chat.js escuta este evento e
+         * abre a conversa correspondente.
+         */
+        window.dispatchEvent(
+            new CustomEvent(
+                'nodegg:open-chat',
+                {
+                    detail: {
+                        username:
+                            cleanUsername,
+
+                        displayName:
+                            String(
+                                displayName ||
+                                cleanUsername
+                            )
+                    }
+                }
+            )
+        );
+    }
+
+
+    function closeDashboardChat() {
+        if (DOM.chatPanel) {
+            DOM.chatPanel.classList.remove(
+                'open'
+            );
+        }
+
+        /*
+         * Informa ao chat.js que a conversa
+         * deve ser encerrada.
+         */
+        window.dispatchEvent(
+            new CustomEvent(
+                'nodegg:close-chat'
+            )
+        );
+    }
+
+
+    /* =====================================================
        WEBSOCKET
     ===================================================== */
 
@@ -545,10 +656,12 @@ document.addEventListener('DOMContentLoaded', () => {
             STATE.ws = null;
         }
 
-        STATE.wsAuthenticated = false;
+        STATE.wsAuthenticated =
+            false;
 
         stopPingMonitor();
     }
+
 
     function scheduleWebSocketReconnect() {
         if (
@@ -559,13 +672,19 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         STATE.reconnectTimer =
-            setTimeout(() => {
-                STATE.reconnectTimer =
-                    null;
+            setTimeout(
+                () => {
 
-                initWebSocket();
-            }, CONFIG.RECONNECT_DELAY);
+                    STATE.reconnectTimer =
+                        null;
+
+                    initWebSocket();
+
+                },
+                CONFIG.RECONNECT_DELAY
+            );
     }
+
 
     function initWebSocket() {
         if (
@@ -581,6 +700,7 @@ document.addEventListener('DOMContentLoaded', () => {
             (
                 STATE.ws.readyState ===
                 WebSocket.OPEN ||
+
                 STATE.ws.readyState ===
                 WebSocket.CONNECTING
             )
@@ -604,7 +724,10 @@ document.addEventListener('DOMContentLoaded', () => {
             STATE.ws = ws;
 
             ws.onopen = () => {
-                if (STATE.ws !== ws) {
+
+                if (
+                    STATE.ws !== ws
+                ) {
                     return;
                 }
 
@@ -627,7 +750,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 );
             };
 
+
             ws.onmessage = event => {
+
                 if (
                     STATE.ws !== ws
                 ) {
@@ -639,7 +764,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 );
             };
 
+
             ws.onerror = () => {
+
                 if (
                     STATE.ws === ws
                 ) {
@@ -650,7 +777,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             };
 
+
             ws.onclose = () => {
+
                 if (
                     STATE.ws === ws
                 ) {
@@ -672,6 +801,7 @@ document.addEventListener('DOMContentLoaded', () => {
             };
 
         } catch (error) {
+
             console.error(
                 '[WS] Erro:',
                 error
@@ -699,6 +829,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             data =
                 JSON.parse(rawData);
+
         } catch {
             return;
         }
@@ -711,57 +842,79 @@ document.addEventListener('DOMContentLoaded', () => {
         switch (type) {
 
             case 'auth_success':
+
                 handleSocketAuthSuccess(
                     data
                 );
+
                 break;
 
+
             case 'auth_error':
+
                 handleSocketAuthError(
                     data
                 );
+
                 break;
 
+
             case 'maintenance_active':
+
                 showToast(
                     data.message ||
                     'Servidor em manutenção.',
                     'error'
                 );
+
                 break;
+
 
             case 'pong':
+
                 handlePong(data);
+
                 break;
 
+
             case 'friend_status_change':
+
                 handleFriendStatusChange(
                     data
                 );
+
                 break;
 
+
             case 'friend_request_received':
+
                 showToast(
                     `Nova solicitação de amizade de ${escapeHtml(data.from || 'usuário')}.`,
                     'info'
                 );
 
                 loadDataFromApi();
+
                 break;
 
+
             case 'friend_request_accepted':
+
                 showToast(
                     `${escapeHtml(data.from || 'Usuário')} aceitou seu pedido de amizade!`,
                     'info'
                 );
 
                 loadDataFromApi();
+
                 break;
+
 
             default:
                 break;
         }
     }
+
 
     function handleSocketAuthSuccess(
         data
@@ -770,6 +923,7 @@ document.addEventListener('DOMContentLoaded', () => {
             true;
 
         if (data.user) {
+
             STATE.userData =
                 data.user;
 
@@ -778,6 +932,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             localStorage.setItem(
                 'user_data',
+
                 JSON.stringify(
                     data.user
                 )
@@ -803,6 +958,7 @@ document.addEventListener('DOMContentLoaded', () => {
         loadDataFromApi();
     }
 
+
     function handleSocketAuthError(
         data
     ) {
@@ -821,12 +977,16 @@ document.addEventListener('DOMContentLoaded', () => {
         );
 
         if (
-            message.toLowerCase()
+            message
+                .toLowerCase()
                 .includes('token') ||
-            message.toLowerCase()
+
+            message
+                .toLowerCase()
                 .includes('sessão')
         ) {
             redirectToLogin();
+
             return;
         }
 
@@ -835,6 +995,7 @@ document.addEventListener('DOMContentLoaded', () => {
             'error'
         );
     }
+
 
     function handlePong(data) {
         if (
@@ -847,6 +1008,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const latency =
             Math.max(
                 0,
+
                 Date.now() -
                 Number(
                     data.timestamp
@@ -861,6 +1023,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 `${latency} ms`;
         }
     }
+
 
     function handleFriendStatusChange(
         data
@@ -885,6 +1048,7 @@ document.addEventListener('DOMContentLoaded', () => {
             'offline';
 
         updateBadges();
+
         renderData();
     }
 
@@ -902,28 +1066,36 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         STATE.pingTimer =
-            setInterval(() => {
+            setInterval(
+                () => {
 
-                if (
-                    STATE.ws &&
-                    STATE.ws.readyState ===
-                    WebSocket.OPEN &&
-                    STATE.wsAuthenticated
-                ) {
-                    STATE.ws.send(
-                        JSON.stringify({
-                            type: 'ping',
-                            timestamp:
-                                Date.now()
-                        })
-                    );
-                }
+                    if (
+                        STATE.ws &&
 
-            }, CONFIG.PING_INTERVAL);
+                        STATE.ws.readyState ===
+                        WebSocket.OPEN &&
+
+                        STATE.wsAuthenticated
+                    ) {
+                        STATE.ws.send(
+                            JSON.stringify({
+                                type: 'ping',
+
+                                timestamp:
+                                    Date.now()
+                            })
+                        );
+                    }
+
+                },
+                CONFIG.PING_INTERVAL
+            );
     }
+
 
     function stopPingMonitor() {
         if (STATE.pingTimer) {
+
             clearInterval(
                 STATE.pingTimer
             );
@@ -980,6 +1152,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
+
             const [
                 friendsData,
                 requestsData
@@ -1006,9 +1179,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     : [];
 
             updateBadges();
+
             renderData();
 
         } catch (error) {
+
             console.error(
                 '[DATA]',
                 error
@@ -1034,6 +1209,7 @@ document.addEventListener('DOMContentLoaded', () => {
     ===================================================== */
 
     function updateBadges() {
+
         const onlineCount =
             STATE.friends.filter(
                 friend =>
@@ -1064,6 +1240,7 @@ document.addEventListener('DOMContentLoaded', () => {
     ===================================================== */
 
     function renderData() {
+
         if (
             !DOM.friendsContainer
         ) {
@@ -1074,6 +1251,7 @@ document.addEventListener('DOMContentLoaded', () => {
             STATE.activeTab ===
             'add'
         ) {
+
             DOM.friendsContainer.classList
                 .add('hidden');
 
@@ -1101,6 +1279,7 @@ document.addEventListener('DOMContentLoaded', () => {
             'requests'
         ) {
             renderRequestsList();
+
             return;
         }
 
@@ -1147,11 +1326,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (
             filtered.length === 0
         ) {
+
             renderEmptyState(
                 STATE.activeTab ===
                     'online'
+
                     ? 'Nenhum amigo online'
+
                     : 'Nenhum amigo encontrado',
+
                 'fa-users-slash'
             );
 
@@ -1165,6 +1348,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 )
         );
     }
+
 
     function renderFriendCard(
         friend
@@ -1194,15 +1378,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
         card.innerHTML = `
             <div class="friend-info-group">
+
                 <div class="avatar-container">
+
                     <div class="user-avatar">
                         ${escapeHtml(initial)}
                     </div>
 
-                    <span class="status-dot ${escapeHtml(status)}"></span>
+                    <span
+                        class="status-dot ${escapeHtml(status)}"
+                    ></span>
+
                 </div>
 
                 <div>
+
                     <div class="user-name">
                         ${escapeHtml(username)}
                     </div>
@@ -1214,10 +1404,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     ">
                         ${escapeHtml(status)}
                     </div>
+
                 </div>
+
             </div>
 
             <div class="friend-actions">
+
                 <button
                     class="icon-btn remove-btn"
                     type="button"
@@ -1225,8 +1418,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 >
                     <i class="fa-solid fa-user-xmark"></i>
                 </button>
+
             </div>
         `;
+
+
+        /* =================================================
+           REMOVE FRIEND BUTTON
+           ================================================= */
 
         const removeBtn =
             card.querySelector(
@@ -1234,20 +1433,101 @@ document.addEventListener('DOMContentLoaded', () => {
             );
 
         if (removeBtn) {
+
             removeBtn.addEventListener(
                 'click',
-                () =>
+                event => {
+
+                    /*
+                     * Impede que o clique no X também
+                     * abra a conversa.
+                     */
+                    event.stopPropagation();
+
                     handleRemoveFriend(
                         username
-                    )
+                    );
+                }
             );
         }
+
+
+        /* =================================================
+           OPEN CHAT
+           ================================================= */
+
+        /*
+         * O card inteiro funciona como botão de chat,
+         * mas os controles internos continuam tendo
+         * comportamento próprio.
+         */
+        card.setAttribute(
+            'role',
+            'button'
+        );
+
+        card.setAttribute(
+            'tabindex',
+            '0'
+        );
+
+
+        card.addEventListener(
+            'click',
+            event => {
+
+                /*
+                 * Não abre o chat quando o usuário clicou
+                 * em algum controle do card.
+                 */
+                if (
+                    event.target.closest(
+                        'button, a, input, select, textarea'
+                    )
+                ) {
+                    return;
+                }
+
+                openChatWithFriend(
+                    username,
+                    username
+                );
+            }
+        );
+
+
+        /*
+         * Permite abrir com Enter ou espaço quando
+         * o card estiver focado por teclado.
+         */
+        card.addEventListener(
+            'keydown',
+            event => {
+
+                if (
+                    event.key !== 'Enter' &&
+                    event.key !== ' '
+                ) {
+                    return;
+                }
+
+                event.preventDefault();
+
+                openChatWithFriend(
+                    username,
+                    username
+                );
+            }
+        );
+
 
         DOM.friendsContainer
             .appendChild(card);
     }
 
+
     function renderRequestsList() {
+
         const query =
             STATE.searchQuery
                 .toLowerCase()
@@ -1267,6 +1547,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (
             filtered.length === 0
         ) {
+
             renderEmptyState(
                 'Nenhuma solicitação pendente',
                 'fa-inbox'
@@ -1299,11 +1580,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 card.innerHTML = `
                     <div class="friend-info-group">
+
                         <div class="user-avatar">
                             ${escapeHtml(initial)}
                         </div>
 
                         <div>
+
                             <div class="user-name">
                                 ${escapeHtml(username)}
                             </div>
@@ -1314,10 +1597,13 @@ document.addEventListener('DOMContentLoaded', () => {
                             ">
                                 Solicitação de amizade
                             </div>
+
                         </div>
+
                     </div>
 
                     <div class="friend-actions">
+
                         <button
                             class="icon-btn accept"
                             type="button"
@@ -1333,6 +1619,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         >
                             <i class="fa-solid fa-xmark"></i>
                         </button>
+
                     </div>
                 `;
 
@@ -1349,20 +1636,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (acceptBtn) {
                     acceptBtn.addEventListener(
                         'click',
-                        () =>
+                        event => {
+
+                            event.stopPropagation();
+
                             handleAcceptRequest(
                                 username
-                            )
+                            );
+                        }
                     );
                 }
 
                 if (rejectBtn) {
                     rejectBtn.addEventListener(
                         'click',
-                        () =>
+                        event => {
+
+                            event.stopPropagation();
+
                             handleRejectRequest(
                                 username
-                            )
+                            );
+                        }
                     );
                 }
 
@@ -1372,14 +1667,22 @@ document.addEventListener('DOMContentLoaded', () => {
         );
     }
 
+
     function renderEmptyState(
         message,
         iconClass
     ) {
         DOM.friendsContainer.innerHTML = `
             <div class="state-container">
-                <i class="fa-solid ${escapeHtml(iconClass)}"></i>
-                <p>${escapeHtml(message)}</p>
+
+                <i
+                    class="fa-solid ${escapeHtml(iconClass)}"
+                ></i>
+
+                <p>
+                    ${escapeHtml(message)}
+                </p>
+
             </div>
         `;
     }
@@ -1423,6 +1726,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
+
             await ApiClient
                 .sendFriendRequest(
                     cleanUsername
@@ -1452,6 +1756,7 @@ document.addEventListener('DOMContentLoaded', () => {
             loadDataFromApi();
 
         } catch (error) {
+
             showToast(
                 error.message ||
                 'Erro ao enviar solicitação.',
@@ -1460,10 +1765,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+
     async function handleAcceptRequest(
         username
     ) {
         try {
+
             await ApiClient
                 .acceptFriendRequest(
                     username
@@ -1477,6 +1784,7 @@ document.addEventListener('DOMContentLoaded', () => {
             await loadDataFromApi();
 
         } catch (error) {
+
             showToast(
                 error.message ||
                 'Erro ao aceitar solicitação.',
@@ -1485,10 +1793,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+
     async function handleRejectRequest(
         username
     ) {
         try {
+
             await ApiClient
                 .rejectFriendRequest(
                     username
@@ -1502,6 +1812,7 @@ document.addEventListener('DOMContentLoaded', () => {
             await loadDataFromApi();
 
         } catch (error) {
+
             showToast(
                 error.message ||
                 'Erro ao recusar solicitação.',
@@ -1509,6 +1820,7 @@ document.addEventListener('DOMContentLoaded', () => {
             );
         }
     }
+
 
     async function handleRemoveFriend(
         username
@@ -1522,6 +1834,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
+
             await ApiClient
                 .removeFriend(
                     username
@@ -1535,6 +1848,7 @@ document.addEventListener('DOMContentLoaded', () => {
             await loadDataFromApi();
 
         } catch (error) {
+
             showToast(
                 error.message ||
                 'Erro ao remover amigo.',
@@ -1549,6 +1863,7 @@ document.addEventListener('DOMContentLoaded', () => {
     ===================================================== */
 
     function updatePageTitle() {
+
         if (!DOM.pageTitle) {
             return;
         }
@@ -1579,6 +1894,10 @@ document.addEventListener('DOMContentLoaded', () => {
     ===================================================== */
 
     function setupEventListeners() {
+
+        /* ================================================
+           NAVIGATION
+           ================================================ */
 
         DOM.navItems.forEach(
             item => {
@@ -1615,6 +1934,10 @@ document.addEventListener('DOMContentLoaded', () => {
         );
 
 
+        /* ================================================
+           USER STATUS
+           ================================================ */
+
         if (
             DOM.userStatusSelect
         ) {
@@ -1642,13 +1965,17 @@ document.addEventListener('DOMContentLoaded', () => {
                          * O servidor atual não possui
                          * endpoint REST de status.
                          *
-                         * Não fazemos uma chamada
+                         * Portanto não fazemos chamada
                          * inexistente.
                          */
                     }
                 );
         }
 
+
+        /* ================================================
+           USERNAME
+           ================================================ */
 
         if (
             DOM.changeUsernameBtn
@@ -1666,6 +1993,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 );
         }
 
+
+        /* ================================================
+           SEARCH
+           ================================================ */
 
         if (
             DOM.searchInput
@@ -1725,6 +2056,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
 
+        /* ================================================
+           ADD FRIEND
+           ================================================ */
+
         if (
             DOM.addFriendForm
         ) {
@@ -1765,6 +2100,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
 
+        /* ================================================
+           QUICK ADD
+           ================================================ */
+
         if (
             DOM.quickAddBtn
         ) {
@@ -1775,6 +2114,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 );
         }
 
+
+        /* ================================================
+           MODAL
+           ================================================ */
 
         if (
             DOM.closeModalBtn
@@ -1816,6 +2159,25 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
 
+        /* ================================================
+           CHAT
+           ================================================ */
+
+        if (
+            DOM.closeChatBtn
+        ) {
+            DOM.closeChatBtn
+                .addEventListener(
+                    'click',
+                    closeDashboardChat
+                );
+        }
+
+
+        /* ================================================
+           MOBILE SIDEBAR
+           ================================================ */
+
         if (
             DOM.openSidebarBtn
         ) {
@@ -1824,11 +2186,23 @@ document.addEventListener('DOMContentLoaded', () => {
                     'click',
                     () => {
 
-                        DOM.sidebar.classList
-                            .add('open');
+                        if (
+                            DOM.sidebar
+                        ) {
+                            DOM.sidebar.classList
+                                .add(
+                                    'open'
+                                );
+                        }
 
-                        DOM.mobileOverlay.classList
-                            .add('active');
+                        if (
+                            DOM.mobileOverlay
+                        ) {
+                            DOM.mobileOverlay.classList
+                                .add(
+                                    'active'
+                                );
+                        }
                     }
                 );
         }
@@ -1862,6 +2236,7 @@ document.addEventListener('DOMContentLoaded', () => {
     ===================================================== */
 
     function openModal() {
+
         if (!DOM.modal) {
             return;
         }
@@ -1880,7 +2255,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+
     function closeModal() {
+
         if (!DOM.modal) {
             return;
         }
@@ -1895,6 +2272,7 @@ document.addEventListener('DOMContentLoaded', () => {
     ===================================================== */
 
     function closeSidebarMobile() {
+
         if (
             DOM.sidebar
         ) {
@@ -1937,7 +2315,9 @@ document.addEventListener('DOMContentLoaded', () => {
             message;
 
         DOM.toastContainer
-            .appendChild(toast);
+            .appendChild(
+                toast
+            );
 
         setTimeout(
             () => {
@@ -1989,6 +2369,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!validSession) {
             redirectToLogin();
+
             return;
         }
 
