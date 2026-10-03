@@ -2,184 +2,176 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Node.GG - Dashboard</title>
-    <link rel="icon" type="image/png" href="../login/icon.png" onerror="this.href='../login/icon.ico'">
+
+    <!-- Google Fonts & Font Awesome Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- CSS Principal -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <div class="ambient-glow"></div>
+    <!-- Overlay para Menu Mobile -->
+    <div id="mobile-overlay" class="mobile-overlay"></div>
 
-    <div class="app-container">
-
-        <!-- Header Mobile -->
-        <header class="mobile-header">
-            <button class="mobile-menu-btn" id="mobile-menu-toggle" aria-label="Abrir menu">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
-            </button>
-            <div class="mobile-brand">
-                <img src="../login/icon.png" alt="Node" class="brand-icon" onerror="this.style.display='none'">
-                <span>Node<span class="highlight">.GG</span></span>
+    <div class="app-layout">
+        <!-- Sidebar Navigation -->
+        <aside id="sidebar" class="sidebar">
+            <div class="sidebar-header">
+                <div class="brand">
+                    <i class="fa-solid fa-gamepad brand-icon"></i>
+                    <span class="brand-title">NODE<span class="highlight">.GG</span></span>
+                </div>
+                <button id="close-sidebar-btn" class="close-sidebar-btn" aria-label="Fechar menu">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
             </div>
-            <button class="icon-btn mobile-profile-btn" onclick="openModal('settings')" aria-label="Configurações">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-            </button>
-        </header>
 
-        <div class="sidebar-overlay" id="sidebar-overlay"></div>
+            <!-- Perfil do Usuário / Status Selector -->
+            <div class="user-profile-card">
+                <div class="avatar-container">
+                    <div id="user-avatar" class="user-avatar">--</div>
+                    <span id="user-status-dot" class="status-dot offline"></span>
+                </div>
+                <div class="user-info">
+                    <h3 id="user-display-name" class="user-name">Carregando...</h3>
+                    <div class="status-selector-wrapper">
+                        <select id="user-status-select" class="user-status-select">
+                            <option value="online">🟢 Online</option>
+                            <option value="away">🌙 Ausente</option>
+                            <option value="busy">🔴 Ocupado</option>
+                            <option value="invisible">⚪ Invisível</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
 
-        <div class="sidebars-container" id="sidebars-container">
-            <nav class="servers-sidebar">
-                <button class="server-icon active" title="Início">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>
+            <!-- Menu de Abas -->
+            <nav class="sidebar-nav">
+                <button class="nav-item active" data-tab="online">
+                    <i class="fa-solid fa-circle-user nav-icon"></i>
+                    <span>Online</span>
+                    <span id="badge-online" class="badge">0</span>
+                </button>
+                <button class="nav-item" data-tab="all">
+                    <i class="fa-solid fa-users nav-icon"></i>
+                    <span>Todos os Amigos</span>
+                    <span id="badge-all" class="badge">0</span>
+                </button>
+                <button class="nav-item" data-tab="requests">
+                    <i class="fa-solid fa-user-clock nav-icon"></i>
+                    <span>Solicitações</span>
+                    <span id="badge-requests" class="badge warning">0</span>
+                </button>
+                <button class="nav-item" data-tab="add">
+                    <i class="fa-solid fa-user-plus nav-icon"></i>
+                    <span>Adicionar Amigo</span>
                 </button>
             </nav>
 
-            <aside class="sub-sidebar">
-                <div class="sub-sidebar-header">
-                    <div class="brand-title">
-                        <img src="../login/icon.png" alt="Node Icon" class="logo-icon" onerror="this.style.display='none'">
-                        <h2>Node<span class="highlight">.GG</span></h2>
-                    </div>
-                </div>
+            <!-- Rodapé da Sidebar -->
+            <div class="sidebar-footer">
+                <button id="change-username-btn" class="action-link">
+                    <i class="fa-solid fa-id-card"></i> Alterar Usuário
+                </button>
+            </div>
+        </aside>
 
-                <div class="sidebar-scrollable">
-                    <div class="menu-section">
-                        <span class="menu-title">Navegação</span>
-                        <button class="menu-item active">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg>
-                            <span>Amigos</span>
-                        </button>
-                        <button class="menu-item" onclick="openModal('chat')">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-                            <span>Abrir Chat</span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Perfil do Usuário Autenticado -->
-                <div class="user-profile-card">
-                    <div class="avatar-wrapper">
-                        <div class="avatar-placeholder" id="user-avatar-text">--</div>
-                        <span class="status-indicator online"></span>
-                    </div>
-                    <div class="user-info">
-                        <div class="user-name" id="user-display-name">Carregando...</div>
-                        <div class="user-tag" id="user-username">@...</div>
-                    </div>
-                    <div class="user-actions">
-                        <button class="icon-btn" onclick="openModal('settings')" title="Configurações">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-                        </button>
-                    </div>
-                </div>
-            </aside>
-        </div>
-
+        <!-- Main Content Area -->
         <main class="main-content">
-            <header class="content-header">
-                <div class="header-left">
-                    <div class="header-title">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg>
-                        <span>Painel de Amigos</span>
-                    </div>
-                    <div class="filter-tabs">
-                        <button class="tab-btn active" data-tab="all">Todos</button>
-                        <button class="tab-btn" data-tab="online">Online</button>
-                        <button class="tab-btn" data-tab="requests">Pedidos</button>
-                    </div>
+            <!-- Topbar / Telemetria -->
+            <header class="topbar">
+                <div class="topbar-left">
+                    <button id="open-sidebar-btn" class="hamburger-btn" aria-label="Abrir menu">
+                        <i class="fa-solid fa-bars"></i>
+                    </button>
+                    <h1 id="page-title" class="page-title">Amigos Online</h1>
                 </div>
 
-                <div class="header-right">
-                    <div class="search-bar">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                        <input type="text" id="search-input" placeholder="Buscar utilizadores...">
+                <div class="topbar-right">
+                    <!-- Monitor de Latência e Conexão Real -->
+                    <div class="telemetry-bar">
+                        <div id="connection-status" class="telemetry-item disconnected" title="Status da conexão WebSocket">
+                            <i class="fa-solid fa-network-wired"></i>
+                            <span id="connection-text">Desconectado</span>
+                        </div>
+                        <div id="ping-indicator" class="telemetry-item" title="Latência em tempo real">
+                            <i class="fa-solid fa-bolt"></i>
+                            <span id="ping-value">-- ms</span>
+                        </div>
                     </div>
+
+                    <!-- Busca Contextual -->
+                    <div class="search-box">
+                        <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                        <input type="text" id="search-input" placeholder="Buscar amigos..." autocomplete="off">
+                        <button id="clear-search-btn" class="clear-search-btn hidden">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+
+                    <!-- Botão de Ação Rápida -->
+                    <button id="quick-add-btn" class="btn btn-primary">
+                        <i class="fa-solid fa-user-plus"></i>
+                        <span>Adicionar</span>
+                    </button>
                 </div>
             </header>
 
-            <div class="dashboard-scrollable">
-                <section class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-icon green">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-                        </div>
-                        <div class="stat-info">
-                            <span class="stat-value" id="online-count">0</span>
-                            <span class="stat-label">Conectados Agora</span>
-                        </div>
-                    </div>
+            <!-- Container Dinâmico de Conteúdo -->
+            <section class="content-body">
+                <!-- Tab: Lista de Amigos / Solicitações -->
+                <div id="friends-list-container" class="friends-list-container">
+                    <!-- Renderizado dinamicamente via JS -->
+                </div>
 
-                    <div class="stat-card">
-                        <div class="stat-icon purple">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg>
-                        </div>
-                        <div class="stat-info">
-                            <span class="stat-value" id="friends-count">0</span>
-                            <span class="stat-label">Total de Amigos</span>
-                        </div>
+                <!-- Tab: Formulário de Adição de Amigo (Oculto por padrão) -->
+                <div id="add-friend-section" class="add-friend-section hidden">
+                    <div class="card add-friend-card">
+                        <h2>ADICIONAR AMIGO</h2>
+                        <p class="subtitle">Você pode adicionar amigos usando a tag ou nome de usuário do Node.GG.</p>
+                        
+                        <form id="add-friend-form" class="add-friend-form">
+                            <div class="input-group">
+                                <input type="text" id="target-username-input" placeholder="Digite o nome do usuário..." required autocomplete="off">
+                                <button type="submit" class="btn btn-primary">Enviar Pedido</button>
+                            </div>
+                        </form>
                     </div>
-
-                    <div class="stat-card">
-                        <div class="stat-icon blue">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
-                        </div>
-                        <div class="stat-info">
-                            <span class="stat-value" id="ping-value">-- ms</span>
-                            <span class="stat-label">Latência da Rede</span>
-                        </div>
-                    </div>
-                </section>
-
-                <section class="users-view">
-                    <div class="section-header">
-                        <span class="section-title">UTILIZADORES E ATIVIDADE</span>
-                    </div>
-                    
-                    <div class="users-list" id="users-container">
-                        <!-- Carregado inteiramente via JS -->
-                    </div>
-                </section>
-            </div>
+                </div>
+            </section>
         </main>
     </div>
 
-    <!-- Modal para Chat / Configurações -->
-    <div id="app-modal" class="modal-overlay" style="display: none;">
-        <div class="modal-container">
-            <header class="modal-header">
-                <span class="modal-title">Node.GG</span>
-                <button id="close-modal-btn" class="modal-close-btn" aria-label="Fechar">&times;</button>
-            </header>
+    <!-- Modal Adicionar Amigo -->
+    <div id="add-friend-modal" class="modal-overlay hidden">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>Adicionar Amigo</h3>
+                <button id="close-modal-btn" class="modal-close-btn">&times;</button>
+            </div>
             <div class="modal-body">
-                <iframe id="modal-iframe" src="" frameborder="0"></iframe>
+                <p>Insira o nome de usuário para enviar a solicitação de amizade:</p>
+                <form id="modal-add-friend-form">
+                    <input type="text" id="modal-username-input" class="modal-input" placeholder="Ex: GamerPro" required>
+                    <div class="modal-actions">
+                        <button type="button" id="cancel-modal-btn" class="btn btn-secondary">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Enviar Solicitação</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
 
-    <script>
-        const mobileToggle = document.getElementById('mobile-menu-toggle');
-        const overlay = document.getElementById('sidebar-overlay');
-        const sidebarsContainer = document.getElementById('sidebars-container');
+    <!-- Container de Notificações Toast -->
+    <div id="toast-container" class="toast-container"></div>
 
-        function toggleMobileMenu() {
-            const isOpen = sidebarsContainer.classList.contains('mobile-active');
-            if (isOpen) {
-                sidebarsContainer.classList.remove('mobile-active');
-                overlay.classList.remove('active');
-            } else {
-                sidebarsContainer.classList.add('mobile-active');
-                overlay.classList.add('active');
-            }
-        }
-
-        if (mobileToggle) mobileToggle.addEventListener('click', toggleMobileMenu);
-        if (overlay) overlay.addEventListener('click', toggleMobileMenu);
-    </script>
-    <script src="dashboard.js"></script>
+    <!-- Script Principal -->
+    <script src="script.js"></script>
 </body>
 </html>
