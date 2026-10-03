@@ -72,28 +72,43 @@ function connectSocket() {
 // TRATAMENTO DAS RESPOSTAS DO SERVIDOR
 // ==========================================
 
-function handleSocketMessage(event) {
-    try {
-        const data = JSON.parse(event.data);
-        console.log('[WS] 📨 Mensagem:', data.type);
+function handleAuthSuccess(data) {
+    const btn = currentAction === 'login'
+        ? document.getElementById('btn-login-submit')
+        : document.getElementById('btn-register-submit');
 
-        if (data.type === 'auth_success') {
-            handleAuthSuccess(data);
-            return;
-        }
+    const user = data.user || {};
+    
+    // Captura o token independentemente de onde o servidor o enviou
+    const token = data.sessionToken || data.token || user.sessionToken || user.token;
 
-        if (data.type === 'auth_error') {
-            handleAuthError(data);
-            return;
-        }
-
-        if (data.type === 'maintenance_active') {
-            handleMaintenance(data);
-            return;
-        }
-    } catch (err) {
-        console.error('[WS] Erro ao processar mensagem:', err);
+    if (token) {
+        localStorage.setItem('sessionToken', token);
+        console.log('[AUTH] 💾 Token salvo com sucesso:', token.substring(0, 8) + '...');
+    } else {
+        console.warn('[AUTH] ⚠️ Nenhum token recebido do servidor no objeto data:', data);
     }
+
+    // Salva dados do usuário garantindo que o token não contamine o objeto se não necessário
+    if (user && Object.keys(user).length > 0) {
+        localStorage.setItem('user_data', JSON.stringify(user));
+        console.log('[AUTH] ✅ Usuário salvo:', user.username || user.displayName);
+    }
+
+    const msg = currentAction === 'register'
+        ? 'Conta criada com sucesso! ✅ Redirecionando...'
+        : 'Login realizado com sucesso! ✅ Redirecionando...';
+
+    showFeedback(msg, 'success');
+    
+    if (btn) {
+        setLoading(btn, false, currentAction === 'login' ? 'Entrar no Node' : 'Criar Minha Conta');
+    }
+
+    // Redireciona para o Dashboard após a autenticação
+    setTimeout(() => {
+        window.location.href = '../dashboard/index.html';
+    }, 1200);
 }
 
 function handleAuthSuccess(data) {
