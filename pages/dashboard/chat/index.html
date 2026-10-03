@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Node.GG - Chat</title>
+
+    <link
+        rel="icon"
+        type="image/png"
+        href="../../../login/icon.png"
+        onerror="this.href='../../../login/icon.ico'"
+    >
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet"
+    >
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div class="chat-app">
+
+        <!-- =====================================================
+             SIDEBAR DE CANAIS
+             ===================================================== -->
+
+        <aside class="chat-sidebar">
+
+            <header class="chat-sidebar-header">
+
+                <div class="chat-server-info">
+                    <div class="server-avatar">
+                        DS
+                    </div>
+
+                    <div class="server-details">
+                        <strong>Dev Squad</strong>
+                        <span>Comunidade</span>
+                    </div>
+                </div>
+
+                <button
+                    class="sidebar-action"
+                    type="button"
+                    aria-label="Opções do servidor"
+                >
+                    ⋯
+                </button>
+
+            </header>
+
+            <div class="channel-list">
+
+                <section class="channel-section">
+
+                    <div class="channel-section-header">
+                        <span>CANAIS DE TEXTO</span>
+
+                        <button
+                            class="channel-add"
+                            type="button"
+                            aria-label="Adicionar canal"
+                        >
+                            +
+                        </button>
+                    </div>
+
+                    <button
+                        class="channel-item active"
+                        type="button"
+                    >
+                        <span class="channel-icon">#</span>
+                        <span class="channel-name">geral-devs</span>
+                    </button>
+
+                    <button
+                        class="channel-item"
+                        type="button"
+                    >
+                        <span class="channel-icon">#</span>
+                        <span class="channel-name">programacao</span>
+                    </button>
+
+                    <button
+                        class="channel-item"
+                        type="button"
+                    >
+                        <span class="channel-icon">#</span>
+                        <span class="channel-name">showcase</span>
+                    </button>
+
+                    <button
+                        class="channel-item"
+                        type="button"
+                    >
+                        <span class="channel-icon">#</span>
+                        <span class="channel-name">off-topic</span>
+                    </button>
+
+                </section>
+
+                <section class="channel-section">
+
+                    <div class="channel-section-header">
+                        <span>GRUPOS</span>
+
+                        <button
+                            class="channel-add"
+                            type="button"
+                            aria-label="Adicionar grupo"
+                        >
+                            +
+                        </button>
+                    </div>
+
+                    <button
+                        class="channel-item"
+                        type="button"
+                    >
+                        <span class="channel-icon">#</span>
+                        <span class="channel-name">unity</span>
+                    </button>
+
+                    <button
+                        class="channel-item"
+                        type="button"
+                    >
+                        <span class="channel-icon">#</span>
+                        <span class="channel-name">web-dev</span>
+                    </button>
+
+                </section>
+
+            </div>
+
+            <!-- USUÁRIO -->
+
+            <footer class="chat-user-panel">
+
+                <div class="user-avatar">
+                    U
+                    <span class="online-dot"></span>
+                </div>
+
+                <div class="chat-user-info">
+                    <strong>Carregando...</strong>
+                    <span>@usuario</span>
+                </div>
+
+                <button
+                    class="user-settings"
+                    type="button"
+                    aria-label="Configurações"
+                >
+                    ⚙
+                </button>
+
+            </footer>
+
+        </aside>
+
+
+        <!-- =====================================================
+             ÁREA PRINCIPAL
+             ===================================================== -->
+
+        <main class="chat-main">
+
+            <!-- HEADER -->
+
+            <header class="chat-header">
+
+                <div class="chat-header-left">
+
+                    <button
+                        class="mobile-channel-button"
+                        type="button"
+                        aria-label="Abrir canais"
+                    >
+                        ☰
+                    </button>
+
+                    <span class="header-hash">#</span>
+
+                    <div class="header-channel-info">
+                        <strong>geral-devs</strong>
+                        <span>
+                            Converse com a comunidade de desenvolvedores
+                        </span>
+                    </div>
+
+                </div>
+
+                <div class="chat-header-actions">
+
+                    <button
+                        class="header-action"
+                        type="button"
+                        aria-label="Pesquisar"
+                    >
+                        <svg
+                            width="19"
+                            height="19"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                        >
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line
+                                x1="21"
+                                y1="21"
+                                x2="16.65"
+                                y2="16.65"
+                            ></line>
+                        </svg>
+                    </button>
+
+                    <button
+                        class="header-action"
+                        type="button"
+                        aria-label="Membros"
+                    >
+                        <svg
+                            width="19"
+                            height="19"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                        >
+                            <path
+                                d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"
+                            ></path>
+
+                            <circle
+                                cx="9"
+                                cy="7"
+                                r="4"
+                            ></circle>
+
+                            <path
+                                d="M23 21v-2a4 4 0 0 0-3-3.87"
+                            ></path>
+
+                            <path
+                                d="M16 3.13a4 4 0 0 1 0 7.75"
+                            ></path>
+                        </svg>
+                    </button>
+
+                </div>
+
+            </header>
+
+
+            <!-- MENSAGENS -->
+
+            <div class="messages-area">
+
+                <div class="channel-intro">
+
+                    <div class="channel-intro-icon">
+                        #
+                    </div>
+
+                    <h1>Bem-vindo ao #geral-devs!</h1>
+
+                    <p>
+                        Esse é o começo do canal. Troque ideia,
+                        compartilhe projetos e fale sobre desenvolvimento.
+                    </p>
+
+                </div>
+
+
+                <!-- MENSAGEM 1 -->
+
+                <article class="message">
+
+                    <div class="message-avatar avatar-blue">
+                        J
+                    </div>
+
+                    <div class="message-content">
+
+                        <div class="message-header">
+
+                            <strong>Jaguaringa_99</strong>
+
+                            <span class="message-tag">
+                                WebGL / 3D
+                            </span>
+
+                            <time>Hoje às 20:41</time>
+
+                        </div>
+
+                        <p>
+                            Mano, finalmente consegui fazer o sistema de
+                            iluminação funcionar no WebGL sem destruir o FPS 💀
+                        </p>
+
+                    </div>
+
+                </article>
+
+
+                <!-- MENSAGEM 2 -->
+
+                <article class="message">
+
+                    <div class="message-avatar avatar-purple">
+                        R
+                    </div>
+
+                    <div class="message-content">
+
+                        <div class="message-header">
+
+                            <strong>RibasDEV</strong>
+
+                            <span class="message-tag">
+                                Dev
+                            </span>
+
+                            <time>Hoje às 20:43</time>
+
+                        </div>
+
+                        <p>
+                            Caralho, finalmente KKKKK. Quanto tá pegando
+                            agora?
+                        </p>
+
+                    </div>
+
+                </article>
+
+
+                <!-- MENSAGEM 3 -->
+
+                <article class="message">
+
+                    <div class="message-avatar avatar-orange">
+                        S
+                    </div>
+
+                    <div class="message-content">
+
+                        <div class="message-header">
+
+                            <strong>SquadLeader</strong>
+
+                            <span class="message-tag">
+                                Gaming
+                            </span>
+
+                            <time>Hoje às 20:44</time>
+
+                        </div>
+
+                        <p>
+                            Aqui também tô mexendo no projeto. Depois mando
+                            umas screenshots do sistema novo.
+                        </p>
+
+                    </div>
+
+                </article>
+
+
+                <!-- MENSAGEM 4 -->
+
+                <article class="message">
+
+                    <div class="message-avatar avatar-green">
+                        N
+                    </div>
+
+                    <div class="message-content">
+
+                        <div class="message-header">
+
+                            <strong>NodeBot</strong>
+
+                            <span class="bot-tag">
+                                BOT
+                            </span>
+
+                            <time>Hoje às 20:45</time>
+
+                        </div>
+
+                        <p>
+                            Novo membro entrou no servidor.
+                            Bem-vindo à Dev Squad! 🚀
+                        </p>
+
+                    </div>
+
+                </article>
+
+            </div>
+
+
+            <!-- INPUT -->
+
+            <footer class="message-composer">
+
+                <button
+                    class="composer-action"
+                    type="button"
+                    aria-label="Adicionar arquivo"
+                >
+                    +
+                </button>
+
+                <input
+                    type="text"
+                    placeholder="Enviar mensagem em #geral-devs"
+                    autocomplete="off"
+                    spellcheck="true"
+                >
+
+                <div class="composer-actions">
+
+                    <button
+                        type="button"
+                        aria-label="Emoji"
+                    >
+                        ☺
+                    </button>
+
+                    <button
+                        type="button"
+                        aria-label="GIF"
+                    >
+                        GIF
+                    </button>
+
+                </div>
+
+            </footer>
+
+        </main>
+
+
+        <!-- =====================================================
+             LISTA DE MEMBROS
+             ===================================================== -->
+
+        <aside class="members-sidebar">
+
+            <div class="members-header">
+                <span>MEMBROS</span>
+                <strong>4</strong>
+            </div>
+
+
+            <section class="members-section">
+
+                <div class="members-section-title">
+                    ONLINE — 4
+                </div>
+
+
+                <div class="member">
+
+                    <div class="member-avatar avatar-green">
+                        R
+                        <span class="member-status online"></span>
+                    </div>
+
+                    <div class="member-info">
+                        <strong>RibasDEV</strong>
+                        <span>Desenvolvendo Node.GG</span>
+                    </div>
+
+                </div>
+
+
+                <div class="member">
+
+                    <div class="member-avatar avatar-blue">
+                        J
+                        <span class="member-status online"></span>
+                    </div>
+
+                    <div class="member-info">
+                        <strong>Jaguaringa_99</strong>
+                        <span>WebGL / 3D</span>
+                    </div>
+
+                </div>
+
+
+                <div class="member">
+
+                    <div class="member-avatar avatar-orange">
+                        S
+                        <span class="member-status dnd"></span>
+                    </div>
+
+                    <div class="member-info">
+                        <strong>SquadLeader</strong>
+                        <span>Clash Royale</span>
+                    </div>
+
+                </div>
+
+
+                <div class="member">
+
+                    <div class="member-avatar avatar-purple">
+                        N
+                        <span class="member-status idle"></span>
+                    </div>
+
+                    <div class="member-info">
+                        <strong>NodeBot</strong>
+                        <span>Automação</span>
+                    </div>
+
+                </div>
+
+            </section>
+
+        </aside>
+
+    </div>
+
+</body>
+</html>
