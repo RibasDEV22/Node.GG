@@ -9,13 +9,11 @@ const feedbackBox = document.getElementById('auth-feedback');
 const tabLogin = document.getElementById('tab-login');
 const tabRegister = document.getElementById('tab-register');
 
-tabLogin.addEventListener('change', clearFeedback);
-tabRegister.addEventListener('change', clearFeedback);
-
-//...
+if (tabLogin) tabLogin.addEventListener('change', clearFeedback);
+if (tabRegister) tabRegister.addEventListener('change', clearFeedback);
 
 // ==========================================
-// CONEXÃO WEBSOCKET
+// UTILS & WEBSOCKET URL
 // ==========================================
 
 function getWebSocketURL() {
@@ -26,84 +24,7 @@ function getWebSocketURL() {
 }
 
 // ==========================================
-// 1. TRATAMENTO DAS MENSAGENS DO SERVIDOR
-// (Defina a função PRIMEIRO)
-// ==========================================
-
-function handleSocketMessage(event) {
-    try {
-        const data = JSON.parse(event.data);
-        console.log('[WS] 📨 Mensagem recebida:', data.type);
-
-        if (data.type === 'auth_success') {
-            handleAuthSuccess(data);
-            return;
-        }
-
-        if (data.type === 'auth_error') {
-            handleAuthError(data);
-            return;
-        }
-
-        if (data.type === 'maintenance_active') {
-            handleMaintenance(data);
-            return;
-        }
-    } catch (err) {
-        console.error('[WS] Erro ao processar mensagem:', err);
-    }
-}
-
-// ==========================================
-// 2. CONEXÃO WEBSOCKET
-// ==========================================
-
-function connectSocket() {
-    return new Promise((resolve, reject) => {
-        if (socket && socket.readyState === WebSocket.OPEN) {
-            resolve(socket);
-            return;
-        }
-
-        try {
-            const wsURL = getWebSocketURL();
-            console.log('[WS] Conectando a:', wsURL);
-            
-            socket = new WebSocket(wsURL);
-            
-            socket.onopen = () => {
-                console.log('[WS] ✅ Conectado com sucesso!');
-                resolve(socket);
-            };
-
-            socket.onerror = (err) => {
-                console.error('[WS] ❌ Erro de conexão:', err);
-                reject(new Error('Falha ao conectar com o servidor.'));
-            };
-
-            // Agora handleSocketMessage já está perfeitamente definida!
-            socket.onmessage = handleSocketMessage;
-
-            socket.onclose = () => {
-                console.log('[WS] Conexão encerrada');
-                socket = null;
-            };
-
-            setTimeout(() => {
-                if (socket && socket.readyState !== WebSocket.OPEN) {
-                    reject(new Error('Timeout: Servidor não respondeu.'));
-                }
-            }, 10000);
-
-        } catch (err) {
-            console.error('[WS] Erro ao criar socket:', err);
-            reject(err);
-        }
-    });
-}
-
-// ==========================================
-// TRATAMENTO DAS RESPOSTAS DO SERVIDOR
+// 1. TRATAMENTO DAS RESPOSTAS DO SERVIDOR
 // ==========================================
 
 function handleAuthSuccess(data) {
@@ -113,7 +34,7 @@ function handleAuthSuccess(data) {
 
     const user = data.user || {};
     
-    // Captura o token independentemente de onde o servidor o enviou
+    // Captura o token em qualquer estrutura enviada pelo servidor
     const token = data.sessionToken || data.token || user.sessionToken || user.token;
 
     if (token) {
@@ -123,7 +44,7 @@ function handleAuthSuccess(data) {
         console.warn('[AUTH] ⚠️ Nenhum token recebido do servidor no objeto data:', data);
     }
 
-    // Salva dados do usuário garantindo que o token não contamine o objeto se não necessário
+    // Salva dados do usuário no localStorage
     if (user && Object.keys(user).length > 0) {
         localStorage.setItem('user_data', JSON.stringify(user));
         console.log('[AUTH] ✅ Usuário salvo:', user.username || user.displayName);
@@ -142,41 +63,6 @@ function handleAuthSuccess(data) {
     // Redireciona para o Dashboard após a autenticação
     setTimeout(() => {
         window.location.href = '../dashboard/index.html';
-    }, 1200);
-}
-
-function handleAuthSuccess(data) {
-    const btn = currentAction === 'login'
-        ? document.getElementById('btn-login-submit')
-        : document.getElementById('btn-register-submit');
-
-    const user = data.user || {};
-    
-    // Salva token de sessão
-    if (user.sessionToken) {
-        localStorage.setItem('sessionToken', user.sessionToken);
-        console.log('[AUTH] 💾 Token salvo:', user.sessionToken.substring(0, 8) + '...');
-    }
-
-    // Salva dados do usuário
-    if (user) {
-        localStorage.setItem('user_data', JSON.stringify(user));
-        console.log('[AUTH] ✅ Usuário:', user.username);
-    }
-
-    const msg = currentAction === 'register'
-        ? 'Conta criada com sucesso! ✅ Redirecionando...'
-        : 'Login realizado com sucesso! ✅ Redirecionando...';
-
-    showFeedback(msg, 'success');
-    
-    if (btn) {
-        setLoading(btn, false, currentAction === 'login' ? 'Entrar no Node' : 'Criar Minha Conta');
-    }
-
-    // Redireciona para o Dashboard após a autenticação
-    setTimeout(() => {
-        window.location.href = '../dashboard/';
     }, 1200);
 }
 
@@ -208,112 +94,191 @@ function handleMaintenance(data) {
 }
 
 // ==========================================
-// LOGIN
+// 2. RECEPTOR DE MENSAGENS DO SOCKET
 // ==========================================
 
-formLogin.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    clearFeedback();
-
-    const identifier = document.getElementById('login-identifier').value.trim();
-    const password = document.getElementById('login-password').value;
-    const btn = document.getElementById('btn-login-submit');
-
-    if (!identifier || !password) {
-        showFeedback('❌ Preencha usuário/e-mail e senha.', 'error');
-        return;
-    }
-
-    currentAction = 'login';
-    setLoading(btn, true, 'Entrando...');
-
+function handleSocketMessage(event) {
     try {
-        console.log('[LOGIN] 🔐 Iniciando login para:', identifier);
-        await connectSocket();
+        const data = JSON.parse(event.data);
+        console.log('[WS] 📨 Mensagem recebida:', data.type);
 
-        socket.send(JSON.stringify({
-            type: 'login',
-            identifier,
-            password
-        }));
+        if (data.type === 'auth_success') {
+            handleAuthSuccess(data);
+            return;
+        }
 
-        console.log('[LOGIN] 📤 Credenciais enviadas ao servidor');
+        if (data.type === 'auth_error') {
+            handleAuthError(data);
+            return;
+        }
 
+        if (data.type === 'maintenance_active') {
+            handleMaintenance(data);
+            return;
+        }
     } catch (err) {
-        const message = err.message || 'Erro ao conectar ao servidor.';
-        console.error('[LOGIN] ❌', message);
-        showFeedback('❌ ' + message, 'error');
-        setLoading(btn, false, 'Entrar no Node');
+        console.error('[WS] Erro ao processar mensagem:', err);
     }
-});
+}
 
 // ==========================================
-// REGISTRO
+// 3. GERENCIADOR DE CONEXÃO WEBSOCKET
 // ==========================================
 
-formRegister.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    clearFeedback();
+function connectSocket() {
+    return new Promise((resolve, reject) => {
+        if (socket && socket.readyState === WebSocket.OPEN) {
+            resolve(socket);
+            return;
+        }
 
-    const username = document.getElementById('reg-username').value.trim();
-    const email = document.getElementById('reg-email').value.trim();
-    const password = document.getElementById('reg-password').value;
-    const terms = document.getElementById('reg-terms');
-    const btn = document.getElementById('btn-register-submit');
+        try {
+            const wsURL = getWebSocketURL();
+            console.log('[WS] Conectando a:', wsURL);
+            
+            socket = new WebSocket(wsURL);
+            
+            socket.onopen = () => {
+                console.log('[WS] ✅ Conectado com sucesso!');
+                resolve(socket);
+            };
 
-    // Validações
-    if (!username || !email || !password) {
-        showFeedback('❌ Preencha todos os campos.', 'error');
-        return;
-    }
+            socket.onerror = (err) => {
+                console.error('[WS] ❌ Erro de conexão:', err);
+                reject(new Error('Falha ao conectar com o servidor.'));
+            };
 
-    if (password.length < 6) {
-        showFeedback('❌ A senha deve ter no mínimo 6 caracteres.', 'error');
-        return;
-    }
+            socket.onmessage = handleSocketMessage;
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-        showFeedback('❌ E-mail inválido.', 'error');
-        return;
-    }
+            socket.onclose = () => {
+                console.log('[WS] Conexão encerrada');
+                socket = null;
+            };
 
-    if (!terms.checked) {
-        showFeedback('❌ Você deve aceitar os termos.', 'error');
-        return;
-    }
+            setTimeout(() => {
+                if (socket && socket.readyState !== WebSocket.OPEN) {
+                    reject(new Error('Timeout: Servidor não respondeu.'));
+                }
+            }, 10000);
 
-    currentAction = 'register';
-    setLoading(btn, true, 'Criando conta...');
-
-    try {
-        console.log('[REGISTER] 📝 Criando conta:', username);
-        await connectSocket();
-
-        socket.send(JSON.stringify({
-            type: 'register',
-            username,
-            email,
-            password,
-            displayName: username,
-            avatar: ''
-        }));
-
-        console.log('[REGISTER] 📤 Dados de registro enviados');
-
-    } catch (err) {
-        const message = err.message || 'Erro ao conectar ao servidor.';
-        console.error('[REGISTER] ❌', message);
-        showFeedback('❌ ' + message, 'error');
-        setLoading(btn, false, 'Criar Minha Conta');
-    }
-});
+        } catch (err) {
+            console.error('[WS] Erro ao criar socket:', err);
+            reject(err);
+        }
+    });
+}
 
 // ==========================================
-// FUNÇÕES AUXILIARES
+// 4. SUBMIT DO FORMULÁRIO DE LOGIN
+// ==========================================
+
+if (formLogin) {
+    formLogin.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        clearFeedback();
+
+        const identifier = document.getElementById('login-identifier').value.trim();
+        const password = document.getElementById('login-password').value;
+        const btn = document.getElementById('btn-login-submit');
+
+        if (!identifier || !password) {
+            showFeedback('❌ Preencha usuário/e-mail e senha.', 'error');
+            return;
+        }
+
+        currentAction = 'login';
+        setLoading(btn, true, 'Entrando...');
+
+        try {
+            console.log('[LOGIN] 🔐 Iniciando login para:', identifier);
+            await connectSocket();
+
+            socket.send(JSON.stringify({
+                type: 'login',
+                identifier,
+                password
+            }));
+
+            console.log('[LOGIN] 📤 Credenciais enviadas ao servidor');
+
+        } catch (err) {
+            const message = err.message || 'Erro ao conectar ao servidor.';
+            console.error('[LOGIN] ❌', message);
+            showFeedback('❌ ' + message, 'error');
+            setLoading(btn, false, 'Entrar no Node');
+        }
+    });
+}
+
+// ==========================================
+// 5. SUBMIT DO FORMULÁRIO DE REGISTRO
+// ==========================================
+
+if (formRegister) {
+    formRegister.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        clearFeedback();
+
+        const username = document.getElementById('reg-username').value.trim();
+        const email = document.getElementById('reg-email').value.trim();
+        const password = document.getElementById('reg-password').value;
+        const terms = document.getElementById('reg-terms');
+        const btn = document.getElementById('btn-register-submit');
+
+        if (!username || !email || !password) {
+            showFeedback('❌ Preencha todos os campos.', 'error');
+            return;
+        }
+
+        if (password.length < 6) {
+            showFeedback('❌ A senha deve ter no mínimo 6 caracteres.', 'error');
+            return;
+        }
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            showFeedback('❌ E-mail inválido.', 'error');
+            return;
+        }
+
+        if (terms && !terms.checked) {
+            showFeedback('❌ Você deve aceitar os termos.', 'error');
+            return;
+        }
+
+        currentAction = 'register';
+        setLoading(btn, true, 'Criando conta...');
+
+        try {
+            console.log('[REGISTER] 📝 Criando conta:', username);
+            await connectSocket();
+
+            socket.send(JSON.stringify({
+                type: 'register',
+                username,
+                email,
+                password,
+                displayName: username,
+                avatar: ''
+            }));
+
+            console.log('[REGISTER] 📤 Dados de registro enviados');
+
+        } catch (err) {
+            const message = err.message || 'Erro ao conectar ao servidor.';
+            console.error('[REGISTER] ❌', message);
+            showFeedback('❌ ' + message, 'error');
+            setLoading(btn, false, 'Criar Minha Conta');
+        }
+    });
+}
+
+// ==========================================
+// FUNÇÕES AUXILIARES DE UI
 // ==========================================
 
 function showFeedback(msg, type = 'error') {
+    if (!feedbackBox) return;
     feedbackBox.textContent = msg;
     feedbackBox.style.display = 'block';
 
@@ -329,6 +294,7 @@ function showFeedback(msg, type = 'error') {
 }
 
 function clearFeedback() {
+    if (!feedbackBox) return;
     feedbackBox.textContent = '';
     feedbackBox.style.display = 'none';
 }
@@ -340,7 +306,7 @@ function setLoading(button, isLoading, text) {
 }
 
 // ==========================================
-// RECONEXÃO COM TOKEN SALVO
+// RECONEXÃO COM TOKEN SALVO NA INICIALIZAÇÃO
 // ==========================================
 
 window.addEventListener('load', async () => {
@@ -360,7 +326,11 @@ window.addEventListener('load', async () => {
             sessionToken
         }));
     } catch (err) {
-        console.warn('[LOAD] Reconexão falhou, necessário novo login:', err.message);
+        console.warn('[LOAD] Reconexão automática falhou, limpando dados salvos:', err.message);
+        if (socket) {
+            try { socket.close(); } catch {}
+            socket = null;
+        }
         localStorage.removeItem('sessionToken');
         localStorage.removeItem('user_data');
     }
