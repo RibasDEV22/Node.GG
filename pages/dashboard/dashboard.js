@@ -1,208 +1,760 @@
-/**
- * NODE.GG DASHBOARD - PRODUCTION JAVASCRIPT
- * Integração Real com Backend via REST API & WebSockets.
- */
-
 document.addEventListener('DOMContentLoaded', () => {
 
-    // ==========================================================================
-    // CONFIGURAÇÃO & ESTADO DA APLICAÇÃO
-    // ==========================================================================
+    /* =====================================================
+       CONFIG
+    ===================================================== */
+
     const CONFIG = {
-        API_BASE: '/api',
-        WS_URL: `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}`,
-        PING_INTERVAL: 10000
+        SERVER_URL: 'https://node-server-b8j3.onrender.com',
+
+        PING_INTERVAL: 10000,
+
+        RECONNECT_DELAY: 5000,
+
+        REQUEST_TIMEOUT: 15000
     };
+
+    CONFIG.API_BASE =
+        `${CONFIG.SERVER_URL}/api`;
+
+    CONFIG.WS_URL =
+        CONFIG.SERVER_URL.replace(
+            /^https:\/\//,
+            'wss://'
+        ).replace(
+            /^http:\/\//,
+            'ws://'
+        );
+
+
+    /* =====================================================
+       STATE
+    ===================================================== */
 
     const STATE = {
-        currentUser: localStorage.getItem('node_gg_username') || null,
+        currentUser: null,
+        userData: null,
+
         userStatus: 'online',
-        activeTab: 'online', // 'online', 'all', 'requests', 'add'
+
+        activeTab: 'online',
+
         searchQuery: '',
-        friends: [],      // Lista real de amigos retornada da API
-        requests: [],     // Pedidos pendentes retornados da API
+
+        friends: [],
+
+        requests: [],
+
         ws: null,
+
+        wsAuthenticated: false,
+
         pingLatency: 0,
-        pingTimer: null
+
+        pingTimer: null,
+
+        reconnectTimer: null,
+
+        destroyed: false
     };
 
-    // ==========================================================================
-    // ELEMENTOS DO DOM
-    // ==========================================================================
+
+    /* =====================================================
+       DOM
+    ===================================================== */
+
     const DOM = {
-        // Usuário & Sidebar
-        userDisplayName: document.getElementById('user-display-name'),
-        userAvatar: document.getElementById('user-avatar'),
-        userStatusDot: document.getElementById('user-status-dot'),
-        userStatusSelect: document.getElementById('user-status-select'),
-        changeUsernameBtn: document.getElementById('change-username-btn'),
-        sidebar: document.getElementById('sidebar'),
-        mobileOverlay: document.getElementById('mobile-overlay'),
-        openSidebarBtn: document.getElementById('open-sidebar-btn'),
-        closeSidebarBtn: document.getElementById('close-sidebar-btn'),
+        userDisplayName:
+            document.getElementById(
+                'user-display-name'
+            ),
 
-        // Telemetria & Busca
-        connectionStatus: document.getElementById('connection-status'),
-        connectionText: document.getElementById('connection-text'),
-        pingValue: document.getElementById('ping-value'),
-        pageTitle: document.getElementById('page-title'),
-        searchInput: document.getElementById('search-input'),
-        clearSearchBtn: document.getElementById('clear-search-btn'),
-        quickAddBtn: document.getElementById('quick-add-btn'),
+        userAvatar:
+            document.getElementById(
+                'user-avatar'
+            ),
 
-        // Badges & Containers
-        badgeOnline: document.getElementById('badge-online'),
-        badgeAll: document.getElementById('badge-all'),
-        badgeRequests: document.getElementById('badge-requests'),
-        friendsContainer: document.getElementById('friends-list-container'),
-        addFriendSection: document.getElementById('add-friend-section'),
-        addFriendForm: document.getElementById('add-friend-form'),
-        targetUsernameInput: document.getElementById('target-username-input'),
+        userStatusDot:
+            document.getElementById(
+                'user-status-dot'
+            ),
 
-        // Modal & Toast
-        modal: document.getElementById('add-friend-modal'),
-        closeModalBtn: document.getElementById('close-modal-btn'),
-        cancelModalBtn: document.getElementById('cancel-modal-btn'),
-        modalAddFriendForm: document.getElementById('modal-add-friend-form'),
-        modalUsernameInput: document.getElementById('modal-username-input'),
-        toastContainer: document.getElementById('toast-container'),
-        navItems: document.querySelectorAll('.nav-item')
+        userStatusSelect:
+            document.getElementById(
+                'user-status-select'
+            ),
+
+        changeUsernameBtn:
+            document.getElementById(
+                'change-username-btn'
+            ),
+
+        sidebar:
+            document.getElementById(
+                'sidebar'
+            ),
+
+        mobileOverlay:
+            document.getElementById(
+                'mobile-overlay'
+            ),
+
+        openSidebarBtn:
+            document.getElementById(
+                'open-sidebar-btn'
+            ),
+
+        closeSidebarBtn:
+            document.getElementById(
+                'close-sidebar-btn'
+            ),
+
+        connectionStatus:
+            document.getElementById(
+                'connection-status'
+            ),
+
+        connectionText:
+            document.getElementById(
+                'connection-text'
+            ),
+
+        pingValue:
+            document.getElementById(
+                'ping-value'
+            ),
+
+        pageTitle:
+            document.getElementById(
+                'page-title'
+            ),
+
+        searchInput:
+            document.getElementById(
+                'search-input'
+            ),
+
+        clearSearchBtn:
+            document.getElementById(
+                'clear-search-btn'
+            ),
+
+        quickAddBtn:
+            document.getElementById(
+                'quick-add-btn'
+            ),
+
+        badgeOnline:
+            document.getElementById(
+                'badge-online'
+            ),
+
+        badgeAll:
+            document.getElementById(
+                'badge-all'
+            ),
+
+        badgeRequests:
+            document.getElementById(
+                'badge-requests'
+            ),
+
+        friendsContainer:
+            document.getElementById(
+                'friends-list-container'
+            ),
+
+        addFriendSection:
+            document.getElementById(
+                'add-friend-section'
+            ),
+
+        addFriendForm:
+            document.getElementById(
+                'add-friend-form'
+            ),
+
+        targetUsernameInput:
+            document.getElementById(
+                'target-username-input'
+            ),
+
+        modal:
+            document.getElementById(
+                'add-friend-modal'
+            ),
+
+        closeModalBtn:
+            document.getElementById(
+                'close-modal-btn'
+            ),
+
+        cancelModalBtn:
+            document.getElementById(
+                'cancel-modal-btn'
+            ),
+
+        modalAddFriendForm:
+            document.getElementById(
+                'modal-add-friend-form'
+            ),
+
+        modalUsernameInput:
+            document.getElementById(
+                'modal-username-input'
+            ),
+
+        toastContainer:
+            document.getElementById(
+                'toast-container'
+            ),
+
+        navItems:
+            document.querySelectorAll(
+                '.nav-item'
+            )
     };
 
-    // ==========================================================================
-    // CLIENTE REST API
-    // ==========================================================================
+
+    /* =====================================================
+       STORAGE
+    ===================================================== */
+
+    function getSessionToken() {
+        return localStorage.getItem(
+            'sessionToken'
+        );
+    }
+
+    function getStoredUser() {
+        const raw =
+            localStorage.getItem(
+                'user_data'
+            );
+
+        if (!raw) {
+            return null;
+        }
+
+        try {
+            return JSON.parse(raw);
+        } catch {
+            localStorage.removeItem(
+                'user_data'
+            );
+
+            return null;
+        }
+    }
+
+    function clearSession() {
+        localStorage.removeItem(
+            'sessionToken'
+        );
+
+        localStorage.removeItem(
+            'user_data'
+        );
+
+        localStorage.removeItem(
+            'node_gg_username'
+        );
+    }
+
+
+    /* =====================================================
+       AUTH
+    ===================================================== */
+
+    function loadStoredSession() {
+        const token =
+            getSessionToken();
+
+        const user =
+            getStoredUser();
+
+        if (!token || !user || !user.username) {
+            return false;
+        }
+
+        STATE.currentUser =
+            user.username;
+
+        STATE.userData =
+            user;
+
+        return true;
+    }
+
+    function redirectToLogin() {
+        if (STATE.destroyed) {
+            return;
+        }
+
+        STATE.destroyed = true;
+
+        if (STATE.ws) {
+            try {
+                STATE.ws.close();
+            } catch {}
+        }
+
+        clearSession();
+
+        window.location.href =
+            '../../login/index.html';
+    }
+
+
+    /* =====================================================
+       API CLIENT
+    ===================================================== */
+
     const ApiClient = {
-        async request(endpoint, options = {}) {
+
+        async request(
+            endpoint,
+            options = {}
+        ) {
+            const token =
+                getSessionToken();
+
+            if (!token) {
+                redirectToLogin();
+                throw new Error(
+                    'Sessão não encontrada.'
+                );
+            }
+
+            const controller =
+                new AbortController();
+
+            const timeout =
+                setTimeout(
+                    () => controller.abort(),
+                    CONFIG.REQUEST_TIMEOUT
+                );
+
             const headers = {
-                'Content-Type': 'application/json',
-                'x-username': STATE.currentUser || '',
+                'Content-Type':
+                    'application/json',
+
+                'Authorization':
+                    `Bearer ${token}`,
+
                 ...(options.headers || {})
             };
 
             try {
-                const response = await fetch(`${CONFIG.API_BASE}${endpoint}`, { ...options, headers });
-                
-                if (!response.ok) {
-                    const errData = await response.json().catch(() => ({}));
-                    throw new Error(errData.message || `Erro HTTP ${response.status}`);
+                const response =
+                    await fetch(
+                        `${CONFIG.API_BASE}${endpoint}`,
+                        {
+                            ...options,
+                            headers,
+                            signal:
+                                controller.signal
+                        }
+                    );
+
+                if (
+                    response.status === 401 ||
+                    response.status === 403
+                ) {
+                    redirectToLogin();
+
+                    throw new Error(
+                        'Sessão expirada.'
+                    );
                 }
 
-                return await response.json();
+                const data =
+                    await response
+                        .json()
+                        .catch(() => ({}));
+
+                if (!response.ok) {
+                    throw new Error(
+                        data.error ||
+                        data.message ||
+                        `Erro HTTP ${response.status}`
+                    );
+                }
+
+                return data;
+
             } catch (error) {
-                console.error(`[API Error] ${endpoint}:`, error.message);
+                if (
+                    error.name ===
+                    'AbortError'
+                ) {
+                    throw new Error(
+                        'O servidor demorou para responder.'
+                    );
+                }
+
                 throw error;
+
+            } finally {
+                clearTimeout(timeout);
             }
         },
 
         getFriendsList() {
-            return this.request('/friends/list');
+            return this.request(
+                '/friends/list'
+            );
         },
 
         getPendingRequests() {
-            return this.request('/friends/requests');
+            return this.request(
+                '/friends/requests'
+            );
         },
 
-        sendFriendRequest(targetUsername) {
-            return this.request('/friends/add', {
-                method: 'POST',
-                body: JSON.stringify({ targetUsername })
-            });
+        sendFriendRequest(
+            targetUsername
+        ) {
+            return this.request(
+                '/friends/send-request',
+                {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        targetUsername
+                    })
+                }
+            );
         },
 
-        acceptFriendRequest(requesterUsername) {
-            return this.request('/friends/accept', {
-                method: 'POST',
-                body: JSON.stringify({ requesterUsername })
-            });
+        acceptFriendRequest(
+            requesterUsername
+        ) {
+            return this.request(
+                '/friends/accept-request',
+                {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        requesterUsername
+                    })
+                }
+            );
         },
 
-        rejectFriendRequest(requesterUsername) {
-            return this.request('/friends/reject', {
-                method: 'POST',
-                body: JSON.stringify({ requesterUsername })
-            });
+        rejectFriendRequest(
+            requesterUsername
+        ) {
+            return this.request(
+                '/friends/decline-request',
+                {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        requesterUsername
+                    })
+                }
+            );
         },
 
-        removeFriend(friendUsername) {
-            return this.request('/friends/remove', {
-                method: 'POST',
-                body: JSON.stringify({ friendUsername })
-            });
+        removeFriend(
+            friendUsername
+        ) {
+            return this.request(
+                '/friends/remove',
+                {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        friendUsername
+                    })
+                }
+            );
         },
 
-        updateStatus(status) {
-            return this.request('/friends/status', {
-                method: 'POST',
-                body: JSON.stringify({ status })
-            });
+        getOnlineUsers() {
+            return this.request(
+                '/friends/online'
+            );
         }
     };
 
-    // ==========================================================================
-    // GERENCIADOR WEBSOCKET (REAL-TIME SYNC & TELEMETRIA)
-    // ==========================================================================
-    function initWebSocket() {
-        if (!STATE.currentUser) return;
 
-        try {
-            STATE.ws = new WebSocket(`${CONFIG.WS_URL}?username=${encodeURIComponent(STATE.currentUser)}`);
+    /* =====================================================
+       USER UI
+    ===================================================== */
 
-            STATE.ws.onopen = () => {
-                updateConnectionState(true);
-                startPingMonitor();
-            };
+    function updateUserInterface() {
+        if (!STATE.userData) {
+            return;
+        }
 
-            STATE.ws.onmessage = (event) => {
-                try {
-                    const data = JSON.parse(event.data);
-                    handleWebSocketMessage(data);
-                } catch (e) {
-                    console.error('[WS Parse Error]:', e);
-                }
-            };
+        const displayName =
+            STATE.userData.displayName ||
+            STATE.userData.username ||
+            'Usuário';
 
-            STATE.ws.onclose = () => {
-                updateConnectionState(false);
-                stopPingMonitor();
-                // Tenta reconexão automática após 5s
-                setTimeout(initWebSocket, 5000);
-            };
+        const username =
+            STATE.userData.username ||
+            '';
 
-            STATE.ws.onerror = (err) => {
-                console.error('[WS Error]:', err);
-                updateConnectionState(false);
-            };
-        } catch (e) {
-            console.error('[WS Exception]:', e);
-            updateConnectionState(false);
+        if (DOM.userDisplayName) {
+            DOM.userDisplayName.textContent =
+                displayName;
+        }
+
+        if (DOM.userAvatar) {
+            const avatar =
+                STATE.userData.avatar;
+
+            if (avatar) {
+                DOM.userAvatar.textContent = '';
+
+                DOM.userAvatar.style.backgroundImage =
+                    `url("${avatar}")`;
+
+                DOM.userAvatar.style.backgroundSize =
+                    'cover';
+
+                DOM.userAvatar.style.backgroundPosition =
+                    'center';
+            } else {
+                DOM.userAvatar.textContent =
+                    (
+                        displayName ||
+                        username ||
+                        '?'
+                    )
+                        .charAt(0)
+                        .toUpperCase();
+
+                DOM.userAvatar.style.backgroundImage =
+                    '';
+            }
         }
     }
 
-    function handleWebSocketMessage(data) {
-        switch (data.type) {
-            case 'PONG':
-                const latency = Date.now() - data.timestamp;
-                STATE.pingLatency = latency;
-                DOM.pingValue.textContent = `${latency} ms`;
-                break;
 
-            case 'FRIEND_STATUS_CHANGE':
-                // Atualiza o status em tempo real na lista local
-                const friend = STATE.friends.find(f => f.username === data.username);
-                if (friend) {
-                    friend.status = data.status;
-                    renderData();
+    /* =====================================================
+       WEBSOCKET
+    ===================================================== */
+
+    function closeWebSocket() {
+        if (STATE.ws) {
+            try {
+                STATE.ws.onclose = null;
+                STATE.ws.close();
+            } catch {}
+
+            STATE.ws = null;
+        }
+
+        STATE.wsAuthenticated = false;
+
+        stopPingMonitor();
+    }
+
+    function scheduleWebSocketReconnect() {
+        if (
+            STATE.destroyed ||
+            STATE.reconnectTimer
+        ) {
+            return;
+        }
+
+        STATE.reconnectTimer =
+            setTimeout(() => {
+                STATE.reconnectTimer =
+                    null;
+
+                initWebSocket();
+            }, CONFIG.RECONNECT_DELAY);
+    }
+
+    function initWebSocket() {
+        if (
+            STATE.destroyed ||
+            !STATE.currentUser ||
+            !getSessionToken()
+        ) {
+            return;
+        }
+
+        if (
+            STATE.ws &&
+            (
+                STATE.ws.readyState ===
+                WebSocket.OPEN ||
+                STATE.ws.readyState ===
+                WebSocket.CONNECTING
+            )
+        ) {
+            return;
+        }
+
+        closeWebSocket();
+
+        updateConnectionState(
+            false,
+            'Conectando...'
+        );
+
+        try {
+            const ws =
+                new WebSocket(
+                    CONFIG.WS_URL
+                );
+
+            STATE.ws = ws;
+
+            ws.onopen = () => {
+                if (STATE.ws !== ws) {
+                    return;
                 }
+
+                const token =
+                    getSessionToken();
+
+                if (!token) {
+                    redirectToLogin();
+                    return;
+                }
+
+                ws.send(
+                    JSON.stringify({
+                        type:
+                            'reconnect_session',
+
+                        sessionToken:
+                            token
+                    })
+                );
+            };
+
+            ws.onmessage = event => {
+                if (
+                    STATE.ws !== ws
+                ) {
+                    return;
+                }
+
+                handleWebSocketMessage(
+                    event.data
+                );
+            };
+
+            ws.onerror = () => {
+                if (
+                    STATE.ws === ws
+                ) {
+                    updateConnectionState(
+                        false,
+                        'Erro de conexão'
+                    );
+                }
+            };
+
+            ws.onclose = () => {
+                if (
+                    STATE.ws === ws
+                ) {
+                    STATE.ws =
+                        null;
+
+                    STATE.wsAuthenticated =
+                        false;
+
+                    stopPingMonitor();
+
+                    updateConnectionState(
+                        false,
+                        'Desconectado'
+                    );
+
+                    scheduleWebSocketReconnect();
+                }
+            };
+
+        } catch (error) {
+            console.error(
+                '[WS] Erro:',
+                error
+            );
+
+            updateConnectionState(
+                false,
+                'Desconectado'
+            );
+
+            scheduleWebSocketReconnect();
+        }
+    }
+
+
+    /* =====================================================
+       WEBSOCKET EVENTS
+    ===================================================== */
+
+    function handleWebSocketMessage(
+        rawData
+    ) {
+        let data;
+
+        try {
+            data =
+                JSON.parse(rawData);
+        } catch {
+            return;
+        }
+
+        const type =
+            String(
+                data.type || ''
+            ).toLowerCase();
+
+        switch (type) {
+
+            case 'auth_success':
+                handleSocketAuthSuccess(
+                    data
+                );
                 break;
 
-            case 'FRIEND_REQUEST_RECEIVED':
-                showToast(`Nova solicitação de amizade de ${data.from}`, 'info');
+            case 'auth_error':
+                handleSocketAuthError(
+                    data
+                );
+                break;
+
+            case 'maintenance_active':
+                showToast(
+                    data.message ||
+                    'Servidor em manutenção.',
+                    'error'
+                );
+                break;
+
+            case 'pong':
+                handlePong(data);
+                break;
+
+            case 'friend_status_change':
+                handleFriendStatusChange(
+                    data
+                );
+                break;
+
+            case 'friend_request_received':
+                showToast(
+                    `Nova solicitação de amizade de ${escapeHtml(data.from || 'usuário')}.`,
+                    'info'
+                );
+
                 loadDataFromApi();
                 break;
 
-            case 'FRIEND_REQUEST_ACCEPTED':
-                showToast(`${data.by} aceitou seu pedido de amizade!`, 'info');
+            case 'friend_request_accepted':
+                showToast(
+                    `${escapeHtml(data.from || 'Usuário')} aceitou seu pedido de amizade!`,
+                    'info'
+                );
+
                 loadDataFromApi();
                 break;
 
@@ -211,364 +763,1276 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function handleSocketAuthSuccess(
+        data
+    ) {
+        STATE.wsAuthenticated =
+            true;
+
+        if (data.user) {
+            STATE.userData =
+                data.user;
+
+            STATE.currentUser =
+                data.user.username;
+
+            localStorage.setItem(
+                'user_data',
+                JSON.stringify(
+                    data.user
+                )
+            );
+        }
+
+        if (data.sessionToken) {
+            localStorage.setItem(
+                'sessionToken',
+                data.sessionToken
+            );
+        }
+
+        updateUserInterface();
+
+        updateConnectionState(
+            true,
+            'Conectado'
+        );
+
+        startPingMonitor();
+
+        loadDataFromApi();
+    }
+
+    function handleSocketAuthError(
+        data
+    ) {
+        STATE.wsAuthenticated =
+            false;
+
+        stopPingMonitor();
+
+        const message =
+            data.message ||
+            'Sessão inválida.';
+
+        console.warn(
+            '[WS AUTH]',
+            message
+        );
+
+        if (
+            message.toLowerCase()
+                .includes('token') ||
+            message.toLowerCase()
+                .includes('sessão')
+        ) {
+            redirectToLogin();
+            return;
+        }
+
+        showToast(
+            message,
+            'error'
+        );
+    }
+
+    function handlePong(data) {
+        if (
+            !data ||
+            !data.timestamp
+        ) {
+            return;
+        }
+
+        const latency =
+            Math.max(
+                0,
+                Date.now() -
+                Number(
+                    data.timestamp
+                )
+            );
+
+        STATE.pingLatency =
+            latency;
+
+        if (DOM.pingValue) {
+            DOM.pingValue.textContent =
+                `${latency} ms`;
+        }
+    }
+
+    function handleFriendStatusChange(
+        data
+    ) {
+        if (!data.username) {
+            return;
+        }
+
+        const friend =
+            STATE.friends.find(
+                item =>
+                    item.username ===
+                    data.username
+            );
+
+        if (!friend) {
+            return;
+        }
+
+        friend.status =
+            data.status ||
+            'offline';
+
+        updateBadges();
+        renderData();
+    }
+
+
+    /* =====================================================
+       PING
+    ===================================================== */
+
     function startPingMonitor() {
         stopPingMonitor();
-        STATE.pingTimer = setInterval(() => {
-            if (STATE.ws && STATE.ws.readyState === WebSocket.OPEN) {
-                STATE.ws.send(JSON.stringify({ type: 'PING', timestamp: Date.now() }));
-            }
-        }, CONFIG.PING_INTERVAL);
+
+        if (DOM.pingValue) {
+            DOM.pingValue.textContent =
+                '-- ms';
+        }
+
+        STATE.pingTimer =
+            setInterval(() => {
+
+                if (
+                    STATE.ws &&
+                    STATE.ws.readyState ===
+                    WebSocket.OPEN &&
+                    STATE.wsAuthenticated
+                ) {
+                    STATE.ws.send(
+                        JSON.stringify({
+                            type: 'ping',
+                            timestamp:
+                                Date.now()
+                        })
+                    );
+                }
+
+            }, CONFIG.PING_INTERVAL);
     }
 
     function stopPingMonitor() {
-        if (STATE.pingTimer) clearInterval(STATE.pingTimer);
-        DOM.pingValue.textContent = '-- ms';
-    }
+        if (STATE.pingTimer) {
+            clearInterval(
+                STATE.pingTimer
+            );
 
-    function updateConnectionState(isConnected) {
-        if (isConnected) {
-            DOM.connectionStatus.className = 'telemetry-item connected';
-            DOM.connectionText.textContent = 'Conectado';
-        } else {
-            DOM.connectionStatus.className = 'telemetry-item disconnected';
-            DOM.connectionText.textContent = 'Desconectado';
+            STATE.pingTimer =
+                null;
+        }
+
+        if (DOM.pingValue) {
+            DOM.pingValue.textContent =
+                '-- ms';
         }
     }
 
-    // ==========================================================================
-    // DADOS & RENDERIZAÇÃO DE UI
-    // ==========================================================================
+
+    /* =====================================================
+       CONNECTION UI
+    ===================================================== */
+
+    function updateConnectionState(
+        connected,
+        customText = null
+    ) {
+        if (!DOM.connectionStatus) {
+            return;
+        }
+
+        DOM.connectionStatus.className =
+            connected
+                ? 'telemetry-item connected'
+                : 'telemetry-item disconnected';
+
+        if (DOM.connectionText) {
+            DOM.connectionText.textContent =
+                customText ||
+                (
+                    connected
+                        ? 'Conectado'
+                        : 'Desconectado'
+                );
+        }
+    }
+
+
+    /* =====================================================
+       API DATA
+    ===================================================== */
+
     async function loadDataFromApi() {
-        if (!STATE.currentUser) return;
+        if (
+            !STATE.currentUser
+        ) {
+            return;
+        }
 
         try {
-            // Busca simultânea de Amigos e Solicitações Pendentes
-            const [friendsData, requestsData] = await Promise.all([
-                ApiClient.getFriendsList().catch(() => []),
-                ApiClient.getPendingRequests().catch(() => [])
+            const [
+                friendsData,
+                requestsData
+            ] = await Promise.all([
+                ApiClient
+                    .getFriendsList(),
+
+                ApiClient
+                    .getPendingRequests()
             ]);
 
-            STATE.friends = Array.isArray(friendsData) ? friendsData : [];
-            STATE.requests = Array.isArray(requestsData) ? requestsData : [];
+            STATE.friends =
+                Array.isArray(
+                    friendsData.friends
+                )
+                    ? friendsData.friends
+                    : [];
+
+            STATE.requests =
+                Array.isArray(
+                    requestsData.requests
+                )
+                    ? requestsData.requests
+                    : [];
 
             updateBadges();
             renderData();
+
         } catch (error) {
-            showToast('Erro ao sincronizar dados com o servidor', 'error');
+            console.error(
+                '[DATA]',
+                error
+            );
+
+            if (
+                !error.message
+                    .toLowerCase()
+                    .includes('sessão')
+            ) {
+                showToast(
+                    error.message ||
+                    'Erro ao sincronizar dados.',
+                    'error'
+                );
+            }
         }
     }
+
+
+    /* =====================================================
+       BADGES
+    ===================================================== */
 
     function updateBadges() {
-        const onlineCount = STATE.friends.filter(f => f.status && f.status !== 'offline').length;
-        DOM.badgeOnline.textContent = onlineCount;
-        DOM.badgeAll.textContent = STATE.friends.length;
-        DOM.badgeRequests.textContent = STATE.requests.length;
-    }
+        const onlineCount =
+            STATE.friends.filter(
+                friend =>
+                    friend.status &&
+                    friend.status !==
+                    'offline'
+            ).length;
 
-    function renderData() {
-        // Se a aba ativa for 'add', oculta a lista de amigos e exibe o formulário
-        if (STATE.activeTab === 'add') {
-            DOM.friendsContainer.classList.add('hidden');
-            DOM.addFriendSection.classList.remove('hidden');
-            return;
-        } else {
-            DOM.friendsContainer.classList.remove('hidden');
-            DOM.addFriendSection.classList.add('hidden');
+        if (DOM.badgeOnline) {
+            DOM.badgeOnline.textContent =
+                onlineCount;
         }
 
-        DOM.friendsContainer.innerHTML = '';
+        if (DOM.badgeAll) {
+            DOM.badgeAll.textContent =
+                STATE.friends.length;
+        }
 
-        if (STATE.activeTab === 'requests') {
+        if (DOM.badgeRequests) {
+            DOM.badgeRequests.textContent =
+                STATE.requests.length;
+        }
+    }
+
+
+    /* =====================================================
+       RENDER
+    ===================================================== */
+
+    function renderData() {
+        if (
+            !DOM.friendsContainer
+        ) {
+            return;
+        }
+
+        if (
+            STATE.activeTab ===
+            'add'
+        ) {
+            DOM.friendsContainer.classList
+                .add('hidden');
+
+            if (DOM.addFriendSection) {
+                DOM.addFriendSection.classList
+                    .remove('hidden');
+            }
+
+            return;
+        }
+
+        DOM.friendsContainer.classList
+            .remove('hidden');
+
+        if (DOM.addFriendSection) {
+            DOM.addFriendSection.classList
+                .add('hidden');
+        }
+
+        DOM.friendsContainer.innerHTML =
+            '';
+
+        if (
+            STATE.activeTab ===
+            'requests'
+        ) {
             renderRequestsList();
             return;
         }
 
-        // Filtragem por Aba (Online vs Todos) e Campo de Busca
-        let filtered = STATE.friends.filter(friend => {
-            const matchesTab = STATE.activeTab === 'online' ? (friend.status && friend.status !== 'offline') : true;
-            const matchesSearch = friend.username.toLowerCase().includes(STATE.searchQuery.toLowerCase());
-            return matchesTab && matchesSearch;
-        });
+        const query =
+            STATE.searchQuery
+                .toLowerCase()
+                .trim();
 
-        if (filtered.length === 0) {
-            renderEmptyState('Nenhum amigo encontrado', 'fa-users-slash');
+        const filtered =
+            STATE.friends.filter(
+                friend => {
+
+                    const status =
+                        friend.status ||
+                        'offline';
+
+                    const matchesTab =
+                        STATE.activeTab ===
+                        'online'
+                            ? status !==
+                                'offline'
+                            : true;
+
+                    const username =
+                        String(
+                            friend.username ||
+                            ''
+                        );
+
+                    const matchesSearch =
+                        username
+                            .toLowerCase()
+                            .includes(
+                                query
+                            );
+
+                    return (
+                        matchesTab &&
+                        matchesSearch
+                    );
+                }
+            );
+
+        if (
+            filtered.length === 0
+        ) {
+            renderEmptyState(
+                STATE.activeTab ===
+                    'online'
+                    ? 'Nenhum amigo online'
+                    : 'Nenhum amigo encontrado',
+                'fa-users-slash'
+            );
+
             return;
         }
 
-        filtered.forEach(friend => {
-            const card = document.createElement('div');
-            card.className = 'friend-card';
-            
-            const initial = friend.username.charAt(0).toUpperCase();
-            const statusClass = friend.status || 'offline';
+        filtered.forEach(
+            friend =>
+                renderFriendCard(
+                    friend
+                )
+        );
+    }
 
-            card.innerHTML = `
-                <div class="friend-info-group">
-                    <div class="avatar-container">
-                        <div class="user-avatar">${initial}</div>
-                        <span class="status-dot ${statusClass}"></span>
+    function renderFriendCard(
+        friend
+    ) {
+        const username =
+            String(
+                friend.username ||
+                ''
+            );
+
+        const status =
+            friend.status ||
+            'offline';
+
+        const initial =
+            username
+                .charAt(0)
+                .toUpperCase();
+
+        const card =
+            document.createElement(
+                'div'
+            );
+
+        card.className =
+            'friend-card';
+
+        card.innerHTML = `
+            <div class="friend-info-group">
+                <div class="avatar-container">
+                    <div class="user-avatar">
+                        ${escapeHtml(initial)}
                     </div>
-                    <div>
-                        <div class="user-name">${escapeHtml(friend.username)}</div>
-                        <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: capitalize;">${statusClass}</div>
+
+                    <span class="status-dot ${escapeHtml(status)}"></span>
+                </div>
+
+                <div>
+                    <div class="user-name">
+                        ${escapeHtml(username)}
+                    </div>
+
+                    <div style="
+                        font-size: 0.75rem;
+                        color: var(--text-muted);
+                        text-transform: capitalize;
+                    ">
+                        ${escapeHtml(status)}
                     </div>
                 </div>
-                <div class="friend-actions">
-                    <button class="icon-btn remove-btn" data-username="${friend.username}" title="Remover Amigo">
-                        <i class="fa-solid fa-user-xmark"></i>
-                    </button>
-                </div>
-            `;
+            </div>
 
-            card.querySelector('.remove-btn').addEventListener('click', () => handleRemoveFriend(friend.username));
-            DOM.friendsContainer.appendChild(card);
-        });
+            <div class="friend-actions">
+                <button
+                    class="icon-btn remove-btn"
+                    type="button"
+                    title="Remover Amigo"
+                >
+                    <i class="fa-solid fa-user-xmark"></i>
+                </button>
+            </div>
+        `;
+
+        const removeBtn =
+            card.querySelector(
+                '.remove-btn'
+            );
+
+        if (removeBtn) {
+            removeBtn.addEventListener(
+                'click',
+                () =>
+                    handleRemoveFriend(
+                        username
+                    )
+            );
+        }
+
+        DOM.friendsContainer
+            .appendChild(card);
     }
 
     function renderRequestsList() {
-        let filteredRequests = STATE.requests.filter(req => 
-            req.username.toLowerCase().includes(STATE.searchQuery.toLowerCase())
-        );
+        const query =
+            STATE.searchQuery
+                .toLowerCase()
+                .trim();
 
-        if (filteredRequests.length === 0) {
-            renderEmptyState('Nenhuma solicitação pendente', 'fa-inbox');
+        const filtered =
+            STATE.requests.filter(
+                request =>
+                    String(
+                        request.username ||
+                        ''
+                    )
+                        .toLowerCase()
+                        .includes(query)
+            );
+
+        if (
+            filtered.length === 0
+        ) {
+            renderEmptyState(
+                'Nenhuma solicitação pendente',
+                'fa-inbox'
+            );
+
             return;
         }
 
-        filteredRequests.forEach(req => {
-            const card = document.createElement('div');
-            card.className = 'friend-card';
-            const initial = req.username.charAt(0).toUpperCase();
+        filtered.forEach(
+            request => {
 
-            card.innerHTML = `
-                <div class="friend-info-group">
-                    <div class="user-avatar">${initial}</div>
-                    <div>
-                        <div class="user-name">${escapeHtml(req.username)}</div>
-                        <div style="font-size: 0.75rem; color: var(--text-muted);">Solicitação de amizade</div>
+                const username =
+                    String(
+                        request.username ||
+                        ''
+                    );
+
+                const initial =
+                    username
+                        .charAt(0)
+                        .toUpperCase();
+
+                const card =
+                    document.createElement(
+                        'div'
+                    );
+
+                card.className =
+                    'friend-card';
+
+                card.innerHTML = `
+                    <div class="friend-info-group">
+                        <div class="user-avatar">
+                            ${escapeHtml(initial)}
+                        </div>
+
+                        <div>
+                            <div class="user-name">
+                                ${escapeHtml(username)}
+                            </div>
+
+                            <div style="
+                                font-size: 0.75rem;
+                                color: var(--text-muted);
+                            ">
+                                Solicitação de amizade
+                            </div>
+                        </div>
                     </div>
-                </div>
-                <div class="friend-actions">
-                    <button class="icon-btn accept" data-username="${req.username}" title="Aceitar">
-                        <i class="fa-solid fa-check"></i>
-                    </button>
-                    <button class="icon-btn reject" data-username="${req.username}" title="Recusar">
-                        <i class="fa-solid fa-xmark"></i>
-                    </button>
-                </div>
-            `;
 
-            card.querySelector('.accept').addEventListener('click', () => handleAcceptRequest(req.username));
-            card.querySelector('.reject').addEventListener('click', () => handleRejectRequest(req.username));
-            DOM.friendsContainer.appendChild(card);
-        });
+                    <div class="friend-actions">
+                        <button
+                            class="icon-btn accept"
+                            type="button"
+                            title="Aceitar"
+                        >
+                            <i class="fa-solid fa-check"></i>
+                        </button>
+
+                        <button
+                            class="icon-btn reject"
+                            type="button"
+                            title="Recusar"
+                        >
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                `;
+
+                const acceptBtn =
+                    card.querySelector(
+                        '.accept'
+                    );
+
+                const rejectBtn =
+                    card.querySelector(
+                        '.reject'
+                    );
+
+                if (acceptBtn) {
+                    acceptBtn.addEventListener(
+                        'click',
+                        () =>
+                            handleAcceptRequest(
+                                username
+                            )
+                    );
+                }
+
+                if (rejectBtn) {
+                    rejectBtn.addEventListener(
+                        'click',
+                        () =>
+                            handleRejectRequest(
+                                username
+                            )
+                    );
+                }
+
+                DOM.friendsContainer
+                    .appendChild(card);
+            }
+        );
     }
 
-    function renderEmptyState(message, iconClass) {
+    function renderEmptyState(
+        message,
+        iconClass
+    ) {
         DOM.friendsContainer.innerHTML = `
             <div class="state-container">
-                <i class="fa-solid ${iconClass}"></i>
-                <p>${message}</p>
+                <i class="fa-solid ${escapeHtml(iconClass)}"></i>
+                <p>${escapeHtml(message)}</p>
             </div>
         `;
     }
 
-    // ==========================================================================
-    // ACOES DE USUARIO & EVENT HANDLERS
-    // ==========================================================================
-    async function handleAddFriend(username) {
-        if (!username.trim()) return;
+
+    /* =====================================================
+       FRIEND ACTIONS
+    ===================================================== */
+
+    async function handleAddFriend(
+        username
+    ) {
+        const cleanUsername =
+            String(
+                username || ''
+            )
+                .trim()
+                .toLowerCase();
+
+        if (!cleanUsername) {
+            showToast(
+                'Digite um nome de usuário.',
+                'error'
+            );
+
+            return;
+        }
+
+        if (
+            cleanUsername ===
+            String(
+                STATE.currentUser
+            ).toLowerCase()
+        ) {
+            showToast(
+                'Você não pode adicionar a si mesmo.',
+                'error'
+            );
+
+            return;
+        }
+
         try {
-            await ApiClient.sendFriendRequest(username.trim());
-            showToast(`Solicitação enviada para ${username}!`, 'info');
+            await ApiClient
+                .sendFriendRequest(
+                    cleanUsername
+                );
+
+            showToast(
+                `Solicitação enviada para ${cleanUsername}!`,
+                'info'
+            );
+
             closeModal();
-            DOM.targetUsernameInput.value = '';
-            loadDataFromApi();
-        } catch (error) {
-            showToast(error.message || 'Erro ao enviar solicitação', 'error');
-        }
-    }
 
-    async function handleAcceptRequest(username) {
-        try {
-            await ApiClient.acceptFriendRequest(username);
-            showToast(`Você agora é amigo de ${username}!`, 'info');
-            loadDataFromApi();
-        } catch (error) {
-            showToast('Erro ao aceitar solicitação', 'error');
-        }
-    }
-
-    async function handleRejectRequest(username) {
-        try {
-            await ApiClient.rejectFriendRequest(username);
-            showToast(`Solicitação de ${username} recusada.`, 'info');
-            loadDataFromApi();
-        } catch (error) {
-            showToast('Erro ao recusar solicitação', 'error');
-        }
-    }
-
-    async function handleRemoveFriend(username) {
-        if (!confirm(`Deseja realmente remover ${username} da sua lista de amigos?`)) return;
-        try {
-            await ApiClient.removeFriend(username);
-            showToast(`${username} foi removido.`, 'info');
-            loadDataFromApi();
-        } catch (error) {
-            showToast('Erro ao remover amigo', 'error');
-        }
-    }
-
-    function ensureUserIdentity() {
-        if (!STATE.currentUser) {
-            const username = prompt('Digite seu nome de usuário no Node.GG:');
-            if (username && username.trim()) {
-                STATE.currentUser = username.trim();
-                localStorage.setItem('node_gg_username', STATE.currentUser);
-            } else {
-                STATE.currentUser = 'Guest_' + Math.floor(Math.random() * 1000);
+            if (
+                DOM.targetUsernameInput
+            ) {
+                DOM.targetUsernameInput.value =
+                    '';
             }
-        }
 
-        DOM.userDisplayName.textContent = STATE.currentUser;
-        DOM.userAvatar.textContent = STATE.currentUser.charAt(0).toUpperCase();
+            if (
+                DOM.modalUsernameInput
+            ) {
+                DOM.modalUsernameInput.value =
+                    '';
+            }
+
+            loadDataFromApi();
+
+        } catch (error) {
+            showToast(
+                error.message ||
+                'Erro ao enviar solicitação.',
+                'error'
+            );
+        }
     }
 
-    // ==========================================================================
-    // EVENT LISTENERS DE INTERFACE
-    // ==========================================================================
+    async function handleAcceptRequest(
+        username
+    ) {
+        try {
+            await ApiClient
+                .acceptFriendRequest(
+                    username
+                );
+
+            showToast(
+                `Você agora é amigo de ${username}!`,
+                'info'
+            );
+
+            await loadDataFromApi();
+
+        } catch (error) {
+            showToast(
+                error.message ||
+                'Erro ao aceitar solicitação.',
+                'error'
+            );
+        }
+    }
+
+    async function handleRejectRequest(
+        username
+    ) {
+        try {
+            await ApiClient
+                .rejectFriendRequest(
+                    username
+                );
+
+            showToast(
+                `Solicitação de ${username} recusada.`,
+                'info'
+            );
+
+            await loadDataFromApi();
+
+        } catch (error) {
+            showToast(
+                error.message ||
+                'Erro ao recusar solicitação.',
+                'error'
+            );
+        }
+    }
+
+    async function handleRemoveFriend(
+        username
+    ) {
+        if (
+            !confirm(
+                `Deseja realmente remover ${username} da sua lista de amigos?`
+            )
+        ) {
+            return;
+        }
+
+        try {
+            await ApiClient
+                .removeFriend(
+                    username
+                );
+
+            showToast(
+                `${username} foi removido.`,
+                'info'
+            );
+
+            await loadDataFromApi();
+
+        } catch (error) {
+            showToast(
+                error.message ||
+                'Erro ao remover amigo.',
+                'error'
+            );
+        }
+    }
+
+
+    /* =====================================================
+       NAVIGATION
+    ===================================================== */
+
+    function updatePageTitle() {
+        if (!DOM.pageTitle) {
+            return;
+        }
+
+        const titles = {
+            online:
+                'Amigos Online',
+
+            all:
+                'Todos os Amigos',
+
+            requests:
+                'Solicitações de Amizade',
+
+            add:
+                'Adicionar Amigo'
+        };
+
+        DOM.pageTitle.textContent =
+            titles[
+                STATE.activeTab
+            ] || 'Dashboard';
+    }
+
+
+    /* =====================================================
+       EVENT LISTENERS
+    ===================================================== */
+
     function setupEventListeners() {
-        // Navegação por Abas
-        DOM.navItems.forEach(item => {
-            item.addEventListener('click', () => {
-                DOM.navItems.forEach(i => i.classList.remove('active'));
-                item.classList.add('active');
 
-                STATE.activeTab = item.dataset.tab;
-                
-                const titles = {
-                    online: 'Amigos Online',
-                    all: 'Todos os Amigos',
-                    requests: 'Solicitações de Amizade',
-                    add: 'Adicionar Amigo'
-                };
-                DOM.pageTitle.textContent = titles[STATE.activeTab] || 'Dashboard';
-                
-                renderData();
-                closeSidebarMobile();
-            });
-        });
+        DOM.navItems.forEach(
+            item => {
 
-        // Alteração de Status
-        DOM.userStatusSelect.addEventListener('change', async (e) => {
-            const newStatus = e.target.value;
-            STATE.userStatus = newStatus;
-            DOM.userStatusDot.className = `status-dot ${newStatus}`;
-            
-            try {
-                await ApiClient.updateStatus(newStatus);
-            } catch (err) {
-                console.error('Falha ao atualizar status:', err);
+                item.addEventListener(
+                    'click',
+                    () => {
+
+                        DOM.navItems.forEach(
+                            nav =>
+                                nav.classList
+                                    .remove(
+                                        'active'
+                                    )
+                        );
+
+                        item.classList
+                            .add(
+                                'active'
+                            );
+
+                        STATE.activeTab =
+                            item.dataset.tab ||
+                            'online';
+
+                        updatePageTitle();
+
+                        renderData();
+
+                        closeSidebarMobile();
+                    }
+                );
             }
-        });
+        );
 
-        // Troca de Nome de Usuário
-        DOM.changeUsernameBtn.addEventListener('click', () => {
-            const newName = prompt('Novo nome de usuário:', STATE.currentUser);
-            if (newName && newName.trim() && newName !== STATE.currentUser) {
-                STATE.currentUser = newName.trim();
-                localStorage.setItem('node_gg_username', STATE.currentUser);
-                ensureUserIdentity();
-                if (STATE.ws) STATE.ws.close();
-                initWebSocket();
-                loadDataFromApi();
-            }
-        });
 
-        // Busca
-        DOM.searchInput.addEventListener('input', (e) => {
-            STATE.searchQuery = e.target.value;
-            DOM.clearSearchBtn.classList.toggle('hidden', !STATE.searchQuery);
-            renderData();
-        });
+        if (
+            DOM.userStatusSelect
+        ) {
+            DOM.userStatusSelect
+                .addEventListener(
+                    'change',
+                    e => {
 
-        DOM.clearSearchBtn.addEventListener('click', () => {
-            DOM.searchInput.value = '';
-            STATE.searchQuery = '';
-            DOM.clearSearchBtn.classList.add('hidden');
-            renderData();
-        });
+                        const newStatus =
+                            e.target.value ||
+                            'online';
 
-        // Formulários de Adicionar Amigo
-        DOM.addFriendForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            handleAddFriend(DOM.targetUsernameInput.value);
-        });
+                        STATE.userStatus =
+                            newStatus;
 
-        DOM.modalAddFriendForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            handleAddFriend(DOM.modalUsernameInput.value);
-        });
+                        if (
+                            DOM.userStatusDot
+                        ) {
+                            DOM.userStatusDot
+                                .className =
+                                `status-dot ${newStatus}`;
+                        }
 
-        // Modal Handlers
-        DOM.quickAddBtn.addEventListener('click', openModal);
-        DOM.closeModalBtn.addEventListener('click', closeModal);
-        DOM.cancelModalBtn.addEventListener('click', closeModal);
-        DOM.modal.addEventListener('click', (e) => { if (e.target === DOM.modal) closeModal(); });
+                        /*
+                         * O servidor atual não possui
+                         * endpoint REST de status.
+                         *
+                         * Não fazemos uma chamada
+                         * inexistente.
+                         */
+                    }
+                );
+        }
 
-        // Mobile Drawer
-        DOM.openSidebarBtn.addEventListener('click', () => {
-            DOM.sidebar.classList.add('open');
-            DOM.mobileOverlay.classList.add('active');
-        });
 
-        DOM.closeSidebarBtn.addEventListener('click', closeSidebarMobile);
-        DOM.mobileOverlay.addEventListener('click', closeSidebarMobile);
+        if (
+            DOM.changeUsernameBtn
+        ) {
+            DOM.changeUsernameBtn
+                .addEventListener(
+                    'click',
+                    () => {
+
+                        showToast(
+                            'O nome de usuário é definido pela conta. Use as configurações de perfil para alterá-lo.',
+                            'info'
+                        );
+                    }
+                );
+        }
+
+
+        if (
+            DOM.searchInput
+        ) {
+            DOM.searchInput
+                .addEventListener(
+                    'input',
+                    e => {
+
+                        STATE.searchQuery =
+                            e.target.value;
+
+                        if (
+                            DOM.clearSearchBtn
+                        ) {
+                            DOM.clearSearchBtn
+                                .classList
+                                .toggle(
+                                    'hidden',
+                                    !STATE.searchQuery
+                                );
+                        }
+
+                        renderData();
+                    }
+                );
+        }
+
+
+        if (
+            DOM.clearSearchBtn
+        ) {
+            DOM.clearSearchBtn
+                .addEventListener(
+                    'click',
+                    () => {
+
+                        if (
+                            DOM.searchInput
+                        ) {
+                            DOM.searchInput.value =
+                                '';
+                        }
+
+                        STATE.searchQuery =
+                            '';
+
+                        DOM.clearSearchBtn
+                            .classList
+                            .add(
+                                'hidden'
+                            );
+
+                        renderData();
+                    }
+                );
+        }
+
+
+        if (
+            DOM.addFriendForm
+        ) {
+            DOM.addFriendForm
+                .addEventListener(
+                    'submit',
+                    e => {
+
+                        e.preventDefault();
+
+                        handleAddFriend(
+                            DOM.targetUsernameInput
+                                ? DOM.targetUsernameInput.value
+                                : ''
+                        );
+                    }
+                );
+        }
+
+
+        if (
+            DOM.modalAddFriendForm
+        ) {
+            DOM.modalAddFriendForm
+                .addEventListener(
+                    'submit',
+                    e => {
+
+                        e.preventDefault();
+
+                        handleAddFriend(
+                            DOM.modalUsernameInput
+                                ? DOM.modalUsernameInput.value
+                                : ''
+                        );
+                    }
+                );
+        }
+
+
+        if (
+            DOM.quickAddBtn
+        ) {
+            DOM.quickAddBtn
+                .addEventListener(
+                    'click',
+                    openModal
+                );
+        }
+
+
+        if (
+            DOM.closeModalBtn
+        ) {
+            DOM.closeModalBtn
+                .addEventListener(
+                    'click',
+                    closeModal
+                );
+        }
+
+
+        if (
+            DOM.cancelModalBtn
+        ) {
+            DOM.cancelModalBtn
+                .addEventListener(
+                    'click',
+                    closeModal
+                );
+        }
+
+
+        if (
+            DOM.modal
+        ) {
+            DOM.modal.addEventListener(
+                'click',
+                e => {
+
+                    if (
+                        e.target ===
+                        DOM.modal
+                    ) {
+                        closeModal();
+                    }
+                }
+            );
+        }
+
+
+        if (
+            DOM.openSidebarBtn
+        ) {
+            DOM.openSidebarBtn
+                .addEventListener(
+                    'click',
+                    () => {
+
+                        DOM.sidebar.classList
+                            .add('open');
+
+                        DOM.mobileOverlay.classList
+                            .add('active');
+                    }
+                );
+        }
+
+
+        if (
+            DOM.closeSidebarBtn
+        ) {
+            DOM.closeSidebarBtn
+                .addEventListener(
+                    'click',
+                    closeSidebarMobile
+                );
+        }
+
+
+        if (
+            DOM.mobileOverlay
+        ) {
+            DOM.mobileOverlay
+                .addEventListener(
+                    'click',
+                    closeSidebarMobile
+                );
+        }
     }
+
+
+    /* =====================================================
+       MODAL
+    ===================================================== */
 
     function openModal() {
-        DOM.modal.classList.remove('hidden');
-        DOM.modalUsernameInput.value = '';
-        DOM.modalUsernameInput.focus();
+        if (!DOM.modal) {
+            return;
+        }
+
+        DOM.modal.classList
+            .remove('hidden');
+
+        if (
+            DOM.modalUsernameInput
+        ) {
+            DOM.modalUsernameInput.value =
+                '';
+
+            DOM.modalUsernameInput
+                .focus();
+        }
     }
 
     function closeModal() {
-        DOM.modal.classList.add('hidden');
+        if (!DOM.modal) {
+            return;
+        }
+
+        DOM.modal.classList
+            .add('hidden');
     }
+
+
+    /* =====================================================
+       SIDEBAR
+    ===================================================== */
 
     function closeSidebarMobile() {
-        DOM.sidebar.classList.remove('open');
-        DOM.mobileOverlay.classList.remove('active');
+        if (
+            DOM.sidebar
+        ) {
+            DOM.sidebar.classList
+                .remove('open');
+        }
+
+        if (
+            DOM.mobileOverlay
+        ) {
+            DOM.mobileOverlay.classList
+                .remove('active');
+        }
     }
 
-    function showToast(message, type = 'info') {
-        const toast = document.createElement('div');
-        toast.className = `toast ${type}`;
-        toast.textContent = message;
-        DOM.toastContainer.appendChild(toast);
 
-        setTimeout(() => {
-            toast.style.opacity = '0';
-            setTimeout(() => toast.remove(), 300);
-        }, 4000);
+    /* =====================================================
+       TOAST
+    ===================================================== */
+
+    function showToast(
+        message,
+        type = 'info'
+    ) {
+        if (
+            !DOM.toastContainer
+        ) {
+            return;
+        }
+
+        const toast =
+            document.createElement(
+                'div'
+            );
+
+        toast.className =
+            `toast ${type}`;
+
+        toast.textContent =
+            message;
+
+        DOM.toastContainer
+            .appendChild(toast);
+
+        setTimeout(
+            () => {
+
+                toast.style.opacity =
+                    '0';
+
+                setTimeout(
+                    () => {
+                        toast.remove();
+                    },
+                    300
+                );
+
+            },
+            4000
+        );
     }
 
-    function escapeHtml(str) {
-        return str.replace(/[&<>"']/g, (m) => ({
-            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
-        })[m]);
+
+    /* =====================================================
+       SECURITY
+    ===================================================== */
+
+    function escapeHtml(value) {
+        return String(
+            value || ''
+        ).replace(
+            /[&<>"']/g,
+            character => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            })[character]
+        );
     }
 
-    // ==========================================================================
-    // INICIALIZAÇÃO
-    // ==========================================================================
+
+    /* =====================================================
+       INITIALIZATION
+    ===================================================== */
+
     function init() {
-        ensureUserIdentity();
+
+        const validSession =
+            loadStoredSession();
+
+        if (!validSession) {
+            redirectToLogin();
+            return;
+        }
+
+        updateUserInterface();
+
+        updatePageTitle();
+
         setupEventListeners();
+
         loadDataFromApi();
+
         initWebSocket();
     }
+
+
+    /* =====================================================
+       PAGE LIFECYCLE
+    ===================================================== */
+
+    window.addEventListener(
+        'beforeunload',
+        () => {
+
+            STATE.destroyed =
+                true;
+
+            if (
+                STATE.reconnectTimer
+            ) {
+                clearTimeout(
+                    STATE.reconnectTimer
+                );
+            }
+
+            stopPingMonitor();
+
+            if (STATE.ws) {
+                try {
+                    STATE.ws.close();
+                } catch {}
+            }
+        }
+    );
+
 
     init();
 });
