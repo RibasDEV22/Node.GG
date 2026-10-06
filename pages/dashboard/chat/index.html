@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Node.GG - Chat</title>
-    <!-- Google Fonts & FontAwesome para ícones profissionais -->
+    <!-- Google Fonts & FontAwesome -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
@@ -13,73 +15,84 @@
     <div class="app-container">
         
         <!-- SIDEBAR DE SERVIDORES (Guilds) -->
-        <nav class="servers-sidebar">
-            <div class="server-icon home-icon active" title="Início / Mensagens Diretas">
-                <i class="fa-solid fa-node"></i>
-                <div class="server-pill"></div>
-            </div>
-            <div class="server-separator"></div>
-            <div class="server-icon" title="Servidor Principal">
+        <nav class="servers-sidebar" aria-label="Servidores">
+            <button class="server-icon home-icon active" title="Início / Mensagens Diretas" aria-label="Início">
+                <i class="fa-solid fa-node" aria-hidden="true"></i>
+                <span class="server-pill"></span>
+            </button>
+            <div class="server-separator" role="separator"></div>
+            <button class="server-icon" title="Servidor Principal" aria-label="Servidor Principal">
                 <span>GG</span>
-                <div class="server-pill"></div>
-            </div>
-            <div class="server-icon add-server" title="Adicionar Servidor">
-                <i class="fa-solid fa-plus"></i>
-            </div>
+                <span class="server-pill"></span>
+            </button>
+            <button class="server-icon add-server" title="Adicionar Servidor" aria-label="Adicionar Servidor">
+                <i class="fa-solid fa-plus" aria-hidden="true"></i>
+            </button>
         </nav>
 
         <!-- SIDEBAR DE CANAIS / CATEGORIAS -->
-        <aside class="channels-sidebar">
-            <div class="server-header">
+        <aside class="channels-sidebar" aria-label="Canais e Categorias">
+            <header class="server-header">
                 <h3>Node.GG Oficial</h3>
-                <i class="fa-solid fa-chevron-down"></i>
-            </div>
+                <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+            </header>
+            
             <div class="channels-list">
+                <!-- Canais de Texto -->
                 <div class="channel-category">
                     <div class="category-title">
-                        <i class="fa-solid fa-angle-down"></i>
-                        <span>TEXT CHANNELS</span>
+                        <i class="fa-solid fa-angle-down" aria-hidden="true"></i>
+                        <span>CANAIS DE TEXTO</span>
                     </div>
-                    <div class="channel-item active">
-                        <i class="fa-solid fa-hashtag"></i>
+                    <div class="channel-item active" role="button" tabindex="0">
+                        <i class="fa-solid fa-hashtag" aria-hidden="true"></i>
                         <span>geral</span>
                     </div>
-                    <div class="channel-item">
-                        <i class="fa-solid fa-hashtag"></i>
+                    <div class="channel-item" role="button" tabindex="0">
+                        <i class="fa-solid fa-hashtag" aria-hidden="true"></i>
                         <span>programacao</span>
                     </div>
-                    <div class="channel-item">
-                        <i class="fa-solid fa-hashtag"></i>
+                    <div class="channel-item" role="button" tabindex="0">
+                        <i class="fa-solid fa-hashtag" aria-hidden="true"></i>
                         <span>midia-e-memes</span>
                     </div>
                 </div>
+
+                <!-- Canais de Voz -->
                 <div class="channel-category">
                     <div class="category-title">
-                        <i class="fa-solid fa-angle-down"></i>
-                        <span>VOICE CHANNELS</span>
+                        <i class="fa-solid fa-angle-down" aria-hidden="true"></i>
+                        <span>CANAIS DE VOZ</span>
                     </div>
-                    <div class="channel-item">
-                        <i class="fa-solid fa-volume-high"></i>
-                        <span>General Voice</span>
+                    <div class="channel-item" role="button" tabindex="0">
+                        <i class="fa-solid fa-volume-high" aria-hidden="true"></i>
+                        <span>Voz Geral</span>
                     </div>
                 </div>
             </div>
+
             <!-- Perfil do Usuário na Barra Lateral -->
-            <div class="user-profile-bar">
+            <footer class="user-profile-bar">
                 <div class="user-avatar">
-                    <img src="https://api.dicebear.com/7.x/bottts/svg?seed=NodeGG" alt="Avatar">
-                    <div class="status-indicator"></div>
+                    <img src="https://api.dicebear.com/7.x/bottts/svg?seed=NodeGG" alt="Avatar de RibasDEV">
+                    <span class="status-indicator online"></span>
                 </div>
                 <div class="user-info">
                     <span class="username">RibasDEV</span>
                     <span class="user-tag">#2026</span>
                 </div>
                 <div class="user-actions">
-                    <button title="Microfone"><i class="fa-solid fa-microphone"></i></button>
-                    <button title="Fones de ouvido"><i class="fa-solid fa-headphones"></i></button>
-                    <button title="Configurações"><i class="fa-solid fa-gear"></i></button>
+                    <button type="button" title="Microfone" aria-label="Silenciar Microfone">
+                        <i class="fa-solid fa-microphone" aria-hidden="true"></i>
+                    </button>
+                    <button type="button" title="Fones de ouvido" aria-label="Desativar Áudio">
+                        <i class="fa-solid fa-headphones" aria-hidden="true"></i>
+                    </button>
+                    <button type="button" title="Configurações" aria-label="Configurações do Usuário">
+                        <i class="fa-solid fa-gear" aria-hidden="true"></i>
+                    </button>
                 </div>
-            </div>
+            </footer>
         </aside>
 
         <!-- ÁREA PRINCIPAL DO CHAT -->
@@ -87,90 +100,112 @@
             <!-- Header do Chat -->
             <header class="chat-header">
                 <div class="chat-header-info">
-                    <i class="fa-solid fa-hashtag"></i>
+                    <i class="fa-solid fa-hashtag" aria-hidden="true"></i>
                     <h2>geral</h2>
                     <span class="chat-description">Bem-vindo ao canal geral do Node.GG! Converse e compartilhe códigos.</span>
                 </div>
                 <div class="chat-header-tools">
-                    <button title="Notificações"><i class="fa-solid fa-bell"></i></button>
-                    <button title="Mensagens Fixadas"><i class="fa-solid fa-thumbtack"></i></button>
-                    <button title="Membros"><i class="fa-solid fa-users" id="member-toggle"></i></button>
+                    <button type="button" title="Notificações" aria-label="Notificações">
+                        <i class="fa-solid fa-bell" aria-hidden="true"></i>
+                    </button>
+                    <button type="button" title="Mensagens Fixadas" aria-label="Mensagens Fixadas">
+                        <i class="fa-solid fa-thumbtack" aria-hidden="true"></i>
+                    </button>
+                    <button type="button" id="member-toggle" title="Membros" aria-label="Alternar Lista de Membros">
+                        <i class="fa-solid fa-users" aria-hidden="true"></i>
+                    </button>
                     <div class="search-box">
-                        <input type="text" placeholder="Buscar...">
-                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" placeholder="Buscar..." aria-label="Buscar na conversa">
+                        <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
                     </div>
                 </div>
             </header>
 
             <!-- Lista de Mensagens -->
-            <div class="chat-messages" id="chat-messages">
+            <section class="chat-messages" id="chat-messages" aria-label="Histórico de mensagens">
                 <!-- Mensagem de boas-vindas / sistema -->
                 <div class="message-group welcome-message">
-                    <div class="welcome-icon"><i class="fa-solid fa-hashtag"></i></div>
+                    <div class="welcome-icon">
+                        <i class="fa-solid fa-hashtag" aria-hidden="true"></i>
+                    </div>
                     <h2>Bem-vindo ao #geral!</h2>
                     <p>Este é o início do canal geral do Node.GG.</p>
                 </div>
 
-                <!-- Mensagem normal 1 -->
-                <div class="message">
+                <!-- Mensagem 1 -->
+                <article class="message">
                     <div class="message-avatar">
-                        <img src="https://api.dicebear.com/7.x/bottts/svg?seed=DevUser" alt="Avatar">
+                        <img src="https://api.dicebear.com/7.x/bottts/svg?seed=DevUser" alt="Avatar de CyberDev">
                     </div>
                     <div class="message-content-wrapper">
                         <div class="message-header">
                             <span class="author">CyberDev</span>
-                            <span class="timestamp">Hoje às 18:15</span>
+                            <time class="timestamp" datetime="2026-10-06T18:15">Hoje às 18:15</time>
                         </div>
-                        <div class="message-text">Fala galera! Alguém testou a nova build do motor gráfico mobile hoje? O desempenho tá insano. 🚀</div>
+                        <div class="message-text">
+                            Fala galera! Alguém testou a nova build do motor gráfico mobile hoje? O desempenho tá insano. 🚀
+                        </div>
                     </div>
-                </div>
+                </article>
 
-                <!-- Mensagem normal 2 -->
-                <div class="message">
+                <!-- Mensagem 2 -->
+                <article class="message">
                     <div class="message-avatar">
-                        <img src="https://api.dicebear.com/7.x/bottts/svg?seed=NodeGG" alt="Avatar">
+                        <img src="https://api.dicebear.com/7.x/bottts/svg?seed=NodeGG" alt="Avatar de RibasDEV">
                     </div>
                     <div class="message-content-wrapper">
                         <div class="message-header">
                             <span class="author owner">RibasDEV <span class="bot-tag">DEV</span></span>
-                            <span class="timestamp">Hoje às 18:20</span>
+                            <time class="timestamp" datetime="2026-10-06T18:20">Hoje às 18:20</time>
                         </div>
-                        <div class="message-text">Sim! Otimizei os shaders e o ganho de FPS foi absurdo. Em breve atualizo o repositório no GitHub. 🔥</div>
+                        <div class="message-text">
+                            Sim! Otimizei os shaders e o ganho de FPS foi absurdo. Em breve atualizo o repositório no GitHub. 🔥
+                        </div>
                     </div>
-                </div>
-            </div>
+                </article>
+            </section>
 
             <!-- Caixa de Input de Mensagem -->
-            <div class="chat-input-container">
-                <div class="chat-input-wrapper">
-                    <button class="input-action-btn" title="Enviar arquivo"><i class="fa-solid fa-circle-plus"></i></button>
-                    <input type="text" id="message-input" placeholder="Conversar em #geral..." autocomplete="off">
+            <footer class="chat-input-container">
+                <form class="chat-input-wrapper" onsubmit="event.preventDefault();">
+                    <button type="button" class="input-action-btn" title="Enviar arquivo" aria-label="Anexar arquivo">
+                        <i class="fa-solid fa-circle-plus" aria-hidden="true"></i>
+                    </button>
+                    <input type="text" id="message-input" placeholder="Conversar em #geral..." autocomplete="off" aria-label="Enviar mensagem para #geral">
                     <div class="input-actions-right">
-                        <button title="Enviar sticker"><i class="fa-solid fa-note-sticky"></i></button>
-                        <button title="Gift"><i class="fa-solid fa-gift"></i></button>
-                        <button title="Emoji"><i class="fa-regular fa-face-smile"></i></button>
+                        <button type="button" title="Enviar sticker" aria-label="Enviar figurinha">
+                            <i class="fa-solid fa-note-sticky" aria-hidden="true"></i>
+                        </button>
+                        <button type="button" title="Enviar Presente" aria-label="Enviar presente">
+                            <i class="fa-solid fa-gift" aria-hidden="true"></i>
+                        </button>
+                        <button type="button" title="Emoji" aria-label="Inserir emoji">
+                            <i class="fa-regular fa-face-smile" aria-hidden="true"></i>
+                        </button>
                     </div>
-                </div>
-            </div>
+                </form>
+            </footer>
         </main>
 
         <!-- SIDEBAR DE MEMBROS -->
-        <aside class="members-sidebar">
+        <aside class="members-sidebar" aria-label="Lista de Membros">
             <div class="members-category">ONLINE — 2</div>
+            
             <div class="member-item">
                 <div class="member-avatar">
-                    <img src="https://api.dicebear.com/7.x/bottts/svg?seed=NodeGG" alt="Avatar">
-                    <div class="status-indicator"></div>
+                    <img src="https://api.dicebear.com/7.x/bottts/svg?seed=NodeGG" alt="Avatar de RibasDEV">
+                    <span class="status-indicator online"></span>
                 </div>
                 <div class="member-info">
                     <span class="member-name owner">RibasDEV</span>
                     <span class="member-game">Codando no Node.GG</span>
                 </div>
             </div>
+
             <div class="member-item">
                 <div class="member-avatar">
-                    <img src="https://api.dicebear.com/7.x/bottts/svg?seed=DevUser" alt="Avatar">
-                    <div class="status-indicator"></div>
+                    <img src="https://api.dicebear.com/7.x/bottts/svg?seed=DevUser" alt="Avatar de CyberDev">
+                    <span class="status-indicator online"></span>
                 </div>
                 <div class="member-info">
                     <span class="member-name">CyberDev</span>
@@ -179,9 +214,10 @@
             </div>
 
             <div class="members-category offline-cat">OFFLINE — 1</div>
+            
             <div class="member-item offline">
                 <div class="member-avatar">
-                    <img src="https://api.dicebear.com/7.x/bottts/svg?seed=OfflineUser" alt="Avatar">
+                    <img src="https://api.dicebear.com/7.x/bottts/svg?seed=OfflineUser" alt="Avatar de ShadowKnight">
                 </div>
                 <div class="member-info">
                     <span class="member-name">ShadowKnight</span>
