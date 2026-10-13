@@ -2,1453 +2,373 @@
 <html lang="pt-BR">
 
 <head>
-
     <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Node.GG - Dashboard</title>
 
+    <!-- GOOGLE FONTS -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-    <!-- =========================================================
-         GOOGLE FONTS
-    ========================================================== -->
+    <!-- FONT AWESOME -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-    <link
-        rel="preconnect"
-        href="https://fonts.googleapis.com"
-    >
+    <!-- DASHBOARD CSS -->
+    <link rel="stylesheet" href="./style.css">
 
-    <link
-        rel="preconnect"
-        href="https://fonts.googleapis.com"
-        crossorigin
-    >
-
-    <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
-        rel="stylesheet"
-    >
-
-
-    <!-- =========================================================
-         FONT AWESOME
-    ========================================================== -->
-
-    <link
-        rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
-    >
-
-
-    <!-- =========================================================
-         DASHBOARD CSS
-    ========================================================== -->
-
-    <link
-        rel="stylesheet"
-        href="./style.css"
-    >
-
-
-    <!-- =========================================================
-         CHAT CSS
-         ---------------------------------------------------------
-         IMPORTANTE:
-         Este arquivo deve conter APENAS estilos do chat.
-         O layout principal pertence ao style.css.
-    ========================================================== -->
-
-    <link
-        rel="stylesheet"
-        href="./chat/style.css"
-    >
-
+    <!-- CHAT CSS -->
+    <link rel="stylesheet" href="./chat/style.css">
 </head>
-
 
 <body>
 
+    <!-- MOBILE OVERLAY -->
+    <div id="mobile-overlay" class="mobile-overlay"></div>
 
-    <!-- =========================================================
-         MOBILE OVERLAY
-    ========================================================== -->
-
-    <div
-        id="mobile-overlay"
-        class="mobile-overlay"
-    ></div>
-
-
-    <!-- =========================================================
-         APP LAYOUT
-         ---------------------------------------------------------
-         PC:
-
-         ┌────────────┬──────────────────────┬─────────────┐
-         │  SIDEBAR   │       DASHBOARD       │    INFO     │
-         │            │         CHAT          │             │
-         └────────────┴──────────────────────┴─────────────┘
-
-         O style.css controla o grid dessas colunas.
-    ========================================================== -->
-
+    <!-- APP LAYOUT -->
     <div class="app-layout">
 
-
-        <!-- =====================================================
-             SIDEBAR
-        ====================================================== -->
-
-        <aside
-            id="sidebar"
-            class="sidebar"
-        >
-
-
-            <!-- =================================================
-                 SIDEBAR HEADER
-            ================================================== -->
-
+        <!-- ================= SIDEBAR ================= -->
+        <aside id="sidebar" class="sidebar">
             <div class="sidebar-header">
-
-
                 <div class="brand">
-
-                    <i
-                        class="fa-solid fa-gamepad brand-icon"
-                    ></i>
-
+                    <div class="brand-icon-glow">
+                        <i class="fa-solid fa-gamepad"></i>
+                    </div>
                     <span class="brand-title">
                         NODE<span class="highlight">.GG</span>
                     </span>
-
                 </div>
-
-
-                <button
-                    id="close-sidebar-btn"
-                    class="close-sidebar-btn"
-                    type="button"
-                    aria-label="Fechar menu"
-                >
-
-                    <i
-                        class="fa-solid fa-xmark"
-                    ></i>
-
+                <button id="close-sidebar-btn" class="close-sidebar-btn" type="button" aria-label="Fechar menu">
+                    <i class="fa-solid fa-xmark"></i>
                 </button>
-
-
             </div>
 
-
-            <!-- =================================================
-                 USER PROFILE
-            ================================================== -->
-
+            <!-- USER PROFILE -->
             <div class="user-profile-card">
-
-
                 <div class="avatar-container">
-
-                    <div
-                        id="user-avatar"
-                        class="user-avatar"
-                    >
-                        --
-                    </div>
-
-
-                    <span
-                        id="user-status-dot"
-                        class="status-dot offline"
-                    ></span>
-
+                    <div id="user-avatar" class="user-avatar">--</div>
+                    <span id="user-status-dot" class="status-dot offline"></span>
                 </div>
-
-
                 <div class="user-info">
-
-
-                    <h3
-                        id="user-display-name"
-                        class="user-name"
-                    >
-                        Carregando...
-                    </h3>
-
-
+                    <h3 id="user-display-name" class="user-name">Carregando...</h3>
                     <div class="status-selector-wrapper">
-
-                        <select
-                            id="user-status-select"
-                            class="user-status-select"
-                        >
-
-                            <option value="online">
-                                🟢 Online
-                            </option>
-
-                            <option value="away">
-                                🌙 Ausente
-                            </option>
-
-                            <option value="busy">
-                                🔴 Ocupado
-                            </option>
-
-                            <option value="invisible">
-                                ⚪ Invisível
-                            </option>
-
+                        <select id="user-status-select" class="user-status-select">
+                            <option value="online">🟢 Online</option>
+                            <option value="away">🌙 Ausente</option>
+                            <option value="busy">🔴 Ocupado</option>
+                            <option value="invisible">⚪ Invisível</option>
                         </select>
-
                     </div>
-
-
                 </div>
-
-
             </div>
 
-
-            <!-- =================================================
-                 SIDEBAR NAVIGATION
-            ================================================== -->
-
+            <!-- SIDEBAR NAV -->
             <nav class="sidebar-nav">
-
-
-                <!-- ONLINE -->
-
-                <button
-                    class="nav-item active"
-                    data-tab="online"
-                    type="button"
-                >
-
-                    <i
-                        class="fa-solid fa-circle-user nav-icon"
-                    ></i>
-
-                    <span>
-                        Online
-                    </span>
-
-                    <span
-                        id="badge-online"
-                        class="badge"
-                    >
-                        0
-                    </span>
-
+                <button class="nav-item active" data-tab="online" type="button">
+                    <i class="fa-solid fa-circle-user nav-icon"></i>
+                    <span>Online</span>
+                    <span id="badge-online" class="badge">0</span>
                 </button>
 
-
-                <!-- TODOS OS AMIGOS -->
-
-                <button
-                    class="nav-item"
-                    data-tab="all"
-                    type="button"
-                >
-
-                    <i
-                        class="fa-solid fa-users nav-icon"
-                    ></i>
-
-                    <span>
-                        Todos os Amigos
-                    </span>
-
-                    <span
-                        id="badge-all"
-                        class="badge"
-                    >
-                        0
-                    </span>
-
+                <button class="nav-item" data-tab="all" type="button">
+                    <i class="fa-solid fa-users nav-icon"></i>
+                    <span>Todos os Amigos</span>
+                    <span id="badge-all" class="badge">0</span>
                 </button>
 
-
-                <!-- SOLICITAÇÕES -->
-
-                <button
-                    class="nav-item"
-                    data-tab="requests"
-                    type="button"
-                >
-
-                    <i
-                        class="fa-solid fa-user-clock nav-icon"
-                    ></i>
-
-                    <span>
-                        Solicitações
-                    </span>
-
-                    <span
-                        id="badge-requests"
-                        class="badge warning"
-                    >
-                        0
-                    </span>
-
+                <button class="nav-item" data-tab="requests" type="button">
+                    <i class="fa-solid fa-user-clock nav-icon"></i>
+                    <span>Solicitações</span>
+                    <span id="badge-requests" class="badge warning">0</span>
                 </button>
 
-
-                <!-- ADICIONAR AMIGO -->
-
-                <button
-                    class="nav-item"
-                    data-tab="add"
-                    type="button"
-                >
-
-                    <i
-                        class="fa-solid fa-user-plus nav-icon"
-                    ></i>
-
-                    <span>
-                        Adicionar Amigo
-                    </span>
-
+                <button class="nav-item" data-tab="add" type="button">
+                    <i class="fa-solid fa-user-plus nav-icon"></i>
+                    <span>Adicionar Amigo</span>
                 </button>
-
-
             </nav>
 
-
-            <!-- =================================================
-                 SIDEBAR FOOTER
-            ================================================== -->
-
+            <!-- SIDEBAR FOOTER -->
             <div class="sidebar-footer">
-
-
-                <button
-                    id="change-username-btn"
-                    class="action-link"
-                    type="button"
-                >
-
-                    <i
-                        class="fa-solid fa-id-card"
-                    ></i>
-
-                    <span>
-                        Alterar Usuário
-                    </span>
-
+                <button id="change-username-btn" class="action-link" type="button">
+                    <i class="fa-solid fa-id-card"></i>
+                    <span>Alterar Usuário</span>
                 </button>
-
-
             </div>
-
-
         </aside>
 
-
-        <!-- =====================================================
-             MAIN CONTENT
-        ====================================================== -->
-
+        <!-- ================= MAIN CONTENT ================= -->
         <main class="main-content">
-
-
-            <!-- =================================================
-                 TOPBAR
-            ================================================== -->
-
             <header class="topbar">
-
-
                 <div class="topbar-left">
-
-
-                    <button
-                        id="open-sidebar-btn"
-                        class="hamburger-btn"
-                        type="button"
-                        aria-label="Abrir menu"
-                    >
-
-                        <i
-                            class="fa-solid fa-bars"
-                        ></i>
-
+                    <button id="open-sidebar-btn" class="hamburger-btn" type="button" aria-label="Abrir menu">
+                        <i class="fa-solid fa-bars"></i>
                     </button>
-
-
                     <div class="page-heading">
-
-
-                        <h1
-                            id="page-title"
-                            class="page-title"
-                        >
-                            Amigos Online
-                        </h1>
-
-
+                        <h1 id="page-title" class="page-title">Amigos Online</h1>
                     </div>
-
-
                 </div>
-
 
                 <div class="topbar-right">
-
-
-                    <!-- =========================================
-                         CONNECTION / PING
-                    ========================================== -->
-
+                    <!-- TELEMETRY / PING -->
                     <div class="telemetry-bar">
-
-
-                        <div
-                            id="connection-status"
-                            class="telemetry-item disconnected"
-                            title="Status da conexão WebSocket"
-                        >
-
-                            <i
-                                class="fa-solid fa-network-wired"
-                            ></i>
-
-                            <span id="connection-text">
-                                Desconectado
-                            </span>
-
+                        <div id="connection-status" class="telemetry-item disconnected" title="Status da conexão WebSocket">
+                            <i class="fa-solid fa-network-wired"></i>
+                            <span id="connection-text">Desconectado</span>
                         </div>
-
-
-                        <div
-                            id="ping-indicator"
-                            class="telemetry-item"
-                            title="Latência em tempo real"
-                        >
-
-                            <i
-                                class="fa-solid fa-bolt"
-                            ></i>
-
-                            <span id="ping-value">
-                                -- ms
-                            </span>
-
+                        <div id="ping-indicator" class="telemetry-item" title="Latência em tempo real">
+                            <i class="fa-solid fa-bolt"></i>
+                            <span id="ping-value">-- ms</span>
                         </div>
-
-
                     </div>
 
-
-                    <!-- =========================================
-                         SEARCH
-                    ========================================== -->
-
+                    <!-- SEARCH -->
                     <div class="search-box">
-
-
-                        <i
-                            class="fa-solid fa-magnifying-glass search-icon"
-                        ></i>
-
-
-                        <input
-                            type="text"
-                            id="search-input"
-                            placeholder="Buscar amigos..."
-                            autocomplete="off"
-                        >
-
-
-                        <button
-                            id="clear-search-btn"
-                            class="clear-search-btn hidden"
-                            type="button"
-                            aria-label="Limpar busca"
-                        >
-
-                            <i
-                                class="fa-solid fa-xmark"
-                            ></i>
-
+                        <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                        <input type="text" id="search-input" placeholder="Buscar amigos..." autocomplete="off">
+                        <button id="clear-search-btn" class="clear-search-btn hidden" type="button" aria-label="Limpar busca">
+                            <i class="fa-solid fa-xmark"></i>
                         </button>
-
-
                     </div>
 
-
-                    <!-- =========================================
-                         QUICK ADD
-                    ========================================== -->
-
-                    <button
-                        id="quick-add-btn"
-                        class="btn btn-primary"
-                        type="button"
-                    >
-
-                        <i
-                            class="fa-solid fa-user-plus"
-                        ></i>
-
-                        <span>
-                            Adicionar
-                        </span>
-
+                    <!-- QUICK ADD -->
+                    <button id="quick-add-btn" class="btn btn-primary" type="button">
+                        <i class="fa-solid fa-user-plus"></i>
+                        <span>Adicionar</span>
                     </button>
-
-
                 </div>
-
-
             </header>
 
-
-            <!-- =================================================
-                 CONTENT BODY
-            ================================================== -->
-
             <section class="content-body">
+                <!-- FRIENDS LIST -->
+                <div id="friends-list-container" class="friends-list-container"></div>
 
-
-                <!-- =============================================
-                     FRIENDS LIST
-                ============================================== -->
-
-                <div
-                    id="friends-list-container"
-                    class="friends-list-container"
-                >
-
-                    <!--
-                        Renderizado dinamicamente
-                        pelo dashboard.js
-                    -->
-
-                </div>
-
-
-                <!-- =============================================
-                     ADD FRIEND TAB
-                ============================================== -->
-
-                <div
-                    id="add-friend-section"
-                    class="add-friend-section hidden"
-                >
-
-
+                <!-- ADD FRIEND TAB -->
+                <div id="add-friend-section" class="add-friend-section hidden">
                     <div class="card add-friend-card">
-
-
                         <div class="card-header">
-
-
                             <div class="card-header-icon">
-
-                                <i
-                                    class="fa-solid fa-user-plus"
-                                ></i>
-
+                                <i class="fa-solid fa-user-plus"></i>
                             </div>
-
-
                             <div>
-
-                                <h2>
-                                    ADICIONAR AMIGO
-                                </h2>
-
-                                <p class="subtitle">
-                                    Encontre pessoas usando o nome de usuário do Node.GG.
-                                </p>
-
+                                <h2>ADICIONAR AMIGO</h2>
+                                <p class="subtitle">Encontre pessoas usando o nome de usuário do Node.GG.</p>
                             </div>
-
-
                         </div>
-
-
-                        <form
-                            id="add-friend-form"
-                            class="add-friend-form"
-                        >
-
-
+                        <form id="add-friend-form" class="add-friend-form">
                             <div class="input-group">
-
-
-                                <input
-                                    type="text"
-                                    id="target-username-input"
-                                    placeholder="Digite o nome do usuário..."
-                                    required
-                                    autocomplete="off"
-                                >
-
-
-                                <button
-                                    type="submit"
-                                    class="btn btn-primary"
-                                >
-
-                                    <i
-                                        class="fa-solid fa-paper-plane"
-                                    ></i>
-
-                                    <span>
-                                        Enviar Pedido
-                                    </span>
-
+                                <input type="text" id="target-username-input" placeholder="Digite o nome do usuário..." required autocomplete="off">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fa-solid fa-paper-plane"></i>
+                                    <span>Enviar Pedido</span>
                                 </button>
-
-
                             </div>
-
-
                         </form>
-
-
                     </div>
-
-
                 </div>
-
-
             </section>
-
-
         </main>
 
-
-        <!-- =====================================================
-             CENTRAL CHAT
-             -----------------------------------------------------
-             No PC este painel ocupa a coluna central do layout.
-
-             O dashboard.js continua responsável pela abertura
-             e fechamento.
-
-             O chat.js continua responsável pelas mensagens,
-             WebSocket, histórico etc.
-        ====================================================== -->
-
-        <aside
-            id="dashboard-chat-panel"
-            class="dashboard-chat-panel"
-        >
-
-
-            <!-- =================================================
-                 CHAT HEADER
-            ================================================== -->
-
-            <div
-                id="chat-header"
-                class="dashboard-chat-header"
-            >
-
-
-                <div class="dashboard-chat-header-info">
-
-
-                    <div
-                        id="chat-avatar"
-                        class="dashboard-chat-avatar"
-                    >
-                        U
+        <!-- ================= CENTRAL CHAT PANEL ================= -->
+        <aside id="dashboard-chat-panel" class="dashboard-chat-panel">
+            
+            <!-- Chat Conversations Sidebar / Drawer (Compatível com chat.js) -->
+            <div class="chat-sidebar-drawer">
+                <div class="chat-sidebar-header">
+                    <h3>Conversas</h3>
+                    <div class="chat-search-box">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" id="chat-search-input" placeholder="Buscar conversas..." autocomplete="off">
                     </div>
-
-
-                    <div class="dashboard-chat-user-info">
-
-
-                        <h3 id="chat-username">
-                            Usuário
-                        </h3>
-
-
-                        <span id="chat-status">
-                            offline
-                        </span>
-
-
-                    </div>
-
-
                 </div>
-
-
-                <div class="dashboard-chat-header-actions">
-
-
-                    <button
-                        id="chat-call-btn"
-                        class="dashboard-chat-action"
-                        type="button"
-                        title="Iniciar chamada"
-                        aria-label="Iniciar chamada"
-                    >
-
-                        <i
-                            class="fa-solid fa-phone"
-                        ></i>
-
-                    </button>
-
-
-                    <button
-                        id="chat-video-btn"
-                        class="dashboard-chat-action"
-                        type="button"
-                        title="Chamada de vídeo"
-                        aria-label="Chamada de vídeo"
-                    >
-
-                        <i
-                            class="fa-solid fa-video"
-                        ></i>
-
-                    </button>
-
-
-                    <button
-                        id="close-chat-btn"
-                        class="dashboard-chat-close"
-                        type="button"
-                        title="Fechar chat"
-                        aria-label="Fechar chat"
-                    >
-
-                        <i
-                            class="fa-solid fa-xmark"
-                        ></i>
-
-                    </button>
-
-
+                <div id="conversations-list" class="conversations-list">
+                    <!-- Renderizado pelo chat.js -->
                 </div>
-
-
             </div>
 
-
-            <!-- =================================================
-                 CHAT BODY
-            ================================================== -->
-
-            <div class="dashboard-chat-body">
-
-
-                <!-- =============================================
-                     EMPTY CHAT STATE
-                ============================================== -->
-
-                <div
-                    id="chat-area"
-                    class="dashboard-chat-empty"
-                >
-
-                    <div class="dashboard-chat-empty-icon">
-
-                        <i
-                            class="fa-regular fa-comments"
-                        ></i>
-
+            <div class="chat-main-wrapper">
+                <!-- CHAT HEADER -->
+                <div id="chat-header" class="dashboard-chat-header" style="display: none;">
+                    <div class="dashboard-chat-header-info">
+                        <div id="chat-avatar" class="dashboard-chat-avatar">U</div>
+                        <div class="dashboard-chat-user-info">
+                            <h3 id="chat-username">Usuário</h3>
+                            <span id="chat-status">offline</span>
+                        </div>
                     </div>
-
-
-                    <strong>
-                        Nenhuma conversa selecionada
-                    </strong>
-
-
-                    <span>
-                        Selecione um amigo para começar uma conversa.
-                    </span>
-
-
+                    <div class="dashboard-chat-header-actions">
+                        <button id="chat-call-btn" class="dashboard-chat-action" type="button" title="Iniciar chamada">
+                            <i class="fa-solid fa-phone"></i>
+                        </button>
+                        <button id="chat-video-btn" class="dashboard-chat-action" type="button" title="Chamada de vídeo">
+                            <i class="fa-solid fa-video"></i>
+                        </button>
+                        <button id="close-chat-btn" class="dashboard-chat-close" type="button" title="Fechar chat">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
                 </div>
 
-
-                <!-- =============================================
-                     MESSAGES
-                ============================================== -->
-
-                <div
-                    id="messages-container"
-                    class="dashboard-messages-container"
-                ></div>
-
-
-            </div>
-
-
-            <!-- =================================================
-                 MESSAGE INPUT
-            ================================================== -->
-
-            <div
-                id="chat-input-area"
-                class="dashboard-chat-input-area"
-                style="display: none;"
-            >
-
-
-                <div class="dashboard-chat-input-wrapper">
-
-
-                    <button
-                        id="chat-attachment-btn"
-                        class="dashboard-chat-input-action"
-                        type="button"
-                        title="Anexar"
-                        aria-label="Anexar arquivo"
-                    >
-
-                        <i
-                            class="fa-solid fa-plus"
-                        ></i>
-
-                    </button>
-
-
-                    <input
-                        type="text"
-                        id="message-input"
-                        placeholder="Escreva uma mensagem..."
-                        autocomplete="off"
-                    >
-
-
-                    <button
-                        id="send-btn"
-                        class="dashboard-send-btn"
-                        type="button"
-                        title="Enviar"
-                        aria-label="Enviar mensagem"
-                    >
-
-                        <i
-                            class="fa-solid fa-paper-plane"
-                        ></i>
-
-                    </button>
-
-
+                <!-- CHAT BODY -->
+                <div class="dashboard-chat-body">
+                    <div id="chat-area" class="dashboard-chat-empty">
+                        <div class="dashboard-chat-empty-icon">
+                            <i class="fa-regular fa-comments"></i>
+                        </div>
+                        <strong>Nenhuma conversa selecionada</strong>
+                        <span>Selecione um amigo para começar uma conversa.</span>
+                    </div>
+                    <div id="messages-container" class="dashboard-messages-container"></div>
                 </div>
 
-
+                <!-- MESSAGE INPUT -->
+                <div id="chat-input-area" class="dashboard-chat-input-area" style="display: none;">
+                    <div class="dashboard-chat-input-wrapper">
+                        <button id="chat-attachment-btn" class="dashboard-chat-input-action" type="button" title="Anexar">
+                            <i class="fa-solid fa-plus"></i>
+                        </button>
+                        <input type="text" id="message-input" placeholder="Escreva uma mensagem..." autocomplete="off">
+                        <button id="send-btn" class="dashboard-send-btn" type="button" title="Enviar">
+                            <i class="fa-solid fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
             </div>
-
-
         </aside>
 
-
-        <!-- =====================================================
-             RIGHT INFO PANEL
-             -----------------------------------------------------
-             Painel permanente no PC.
-
-             Mostra informações da conversa selecionada.
-        ====================================================== -->
-
-        <aside
-            id="dashboard-info-panel"
-            class="dashboard-info-panel"
-        >
-
-
-            <!-- =================================================
-                 INFO HEADER
-            ================================================== -->
-
+        <!-- ================= RIGHT INFO PANEL ================= -->
+        <aside id="dashboard-info-panel" class="dashboard-info-panel">
             <div class="dashboard-info-header">
-
-
                 <div class="dashboard-info-title">
-
-
-                    <i
-                        class="fa-solid fa-circle-info"
-                    ></i>
-
-
-                    <span>
-                        Informações
-                    </span>
-
-
+                    <i class="fa-solid fa-circle-info"></i>
+                    <span>Informações</span>
                 </div>
-
-
-                <button
-                    id="close-info-panel-btn"
-                    class="dashboard-info-close"
-                    type="button"
-                    title="Fechar informações"
-                    aria-label="Fechar informações"
-                >
-
-                    <i
-                        class="fa-solid fa-xmark"
-                    ></i>
-
+                <button id="close-info-panel-btn" class="dashboard-info-close" type="button" title="Fechar informações">
+                    <i class="fa-solid fa-xmark"></i>
                 </button>
-
-
             </div>
-
-
-            <!-- =================================================
-                 PROFILE
-            ================================================== -->
 
             <div class="dashboard-info-profile">
-
-
-                <div
-                    id="info-avatar"
-                    class="dashboard-info-avatar"
-                >
-                    ?
-                </div>
-
-
-                <h2
-                    id="info-profile-name"
-                    class="dashboard-info-profile-name"
-                >
-                    Nenhuma conversa
-                </h2>
-
-
-                <span
-                    id="info-profile-username"
-                    class="dashboard-info-profile-username"
-                >
-                    Selecione um amigo
-                </span>
-
-
-                <div
-                    id="info-profile-status"
-                    class="dashboard-info-profile-status"
-                >
-
+                <div id="info-avatar" class="dashboard-info-avatar">?</div>
+                <h2 id="info-profile-name" class="dashboard-info-profile-name">Nenhuma conversa</h2>
+                <span id="info-profile-username" class="dashboard-info-profile-username">Selecione um amigo</span>
+                <div id="info-profile-status" class="dashboard-info-profile-status">
                     <span class="info-status-dot"></span>
-
-                    <span id="info-status-text">
-                        Offline
-                    </span>
-
+                    <span id="info-status-text">Offline</span>
                 </div>
-
-
             </div>
 
-
-            <!-- =================================================
-                 PROFILE DETAILS
-            ================================================== -->
-
             <section class="dashboard-info-section">
-
-
-                <div class="dashboard-info-section-title">
-
-                    <span>
-                        PERFIL
-                    </span>
-
-                </div>
-
-
+                <div class="dashboard-info-section-title"><span>PERFIL</span></div>
                 <div class="dashboard-info-list">
-
-
-                    <!-- USERNAME -->
-
                     <div class="dashboard-info-row">
-
-
-                        <div class="dashboard-info-row-icon">
-
-                            <i
-                                class="fa-solid fa-at"
-                            ></i>
-
-                        </div>
-
-
+                        <div class="dashboard-info-row-icon"><i class="fa-solid fa-at"></i></div>
                         <div class="dashboard-info-row-content">
-
-
-                            <span class="dashboard-info-label">
-                                Usuário
-                            </span>
-
-
-                            <strong
-                                id="info-username"
-                                class="dashboard-info-value"
-                            >
-                                --
-                            </strong>
-
-
+                            <span class="dashboard-info-label">Usuário</span>
+                            <strong id="info-username" class="dashboard-info-value">--</strong>
                         </div>
-
-
                     </div>
-
-
-                    <!-- STATUS -->
-
                     <div class="dashboard-info-row">
-
-
-                        <div class="dashboard-info-row-icon">
-
-                            <i
-                                class="fa-solid fa-signal"
-                            ></i>
-
-                        </div>
-
-
+                        <div class="dashboard-info-row-icon"><i class="fa-solid fa-signal"></i></div>
                         <div class="dashboard-info-row-content">
-
-
-                            <span class="dashboard-info-label">
-                                Status
-                            </span>
-
-
-                            <strong
-                                id="info-status"
-                                class="dashboard-info-value"
-                            >
-                                Offline
-                            </strong>
-
-
+                            <span class="dashboard-info-label">Status</span>
+                            <strong id="info-status" class="dashboard-info-value">Offline</strong>
                         </div>
-
-
                     </div>
-
-
-                    <!-- MEMBER -->
-
                     <div class="dashboard-info-row">
-
-
-                        <div class="dashboard-info-row-icon">
-
-                            <i
-                                class="fa-solid fa-calendar"
-                            ></i>
-
-                        </div>
-
-
+                        <div class="dashboard-info-row-icon"><i class="fa-solid fa-calendar"></i></div>
                         <div class="dashboard-info-row-content">
-
-
-                            <span class="dashboard-info-label">
-                                Membro desde
-                            </span>
-
-
-                            <strong
-                                id="info-member-since"
-                                class="dashboard-info-value"
-                            >
-                                --
-                            </strong>
-
-
+                            <span class="dashboard-info-label">Membro desde</span>
+                            <strong id="info-member-since" class="dashboard-info-value">--</strong>
                         </div>
-
-
                     </div>
-
-
                 </div>
-
-
             </section>
 
-
-            <!-- =================================================
-                 MEMBERS / PARTICIPANTS
-            ================================================== -->
-
             <section class="dashboard-info-section">
-
-
                 <div class="dashboard-info-section-title">
-
-
-                    <span>
-                        PARTICIPANTES
-                    </span>
-
-
-                    <span
-                        id="info-member-count"
-                        class="dashboard-info-count"
-                    >
-                        0
-                    </span>
-
-
+                    <span>PARTICIPANTES</span>
+                    <span id="info-member-count" class="dashboard-info-count">0</span>
                 </div>
-
-
-                <div
-                    id="info-members-list"
-                    class="dashboard-info-members-list"
-                >
-
-
+                <div id="info-members-list" class="dashboard-info-members-list">
                     <div class="dashboard-info-empty">
-
-                        <i
-                            class="fa-solid fa-users"
-                        ></i>
-
-                        <span>
-                            Nenhum participante
-                        </span>
-
+                        <i class="fa-solid fa-users"></i>
+                        <span>Nenhum participante</span>
                     </div>
-
-
                 </div>
-
-
             </section>
-
-
-            <!-- =================================================
-                 MEDIA
-            ================================================== -->
 
             <section class="dashboard-info-section">
-
-
-                <div class="dashboard-info-section-title">
-
-                    <span>
-                        MÍDIA E ARQUIVOS
-                    </span>
-
-                </div>
-
-
+                <div class="dashboard-info-section-title"><span>MÍDIA E ARQUIVOS</span></div>
                 <div class="dashboard-info-media-grid">
-
-
-                    <button
-                        id="info-media-images"
-                        class="dashboard-info-media-card"
-                        type="button"
-                    >
-
-                        <i
-                            class="fa-regular fa-image"
-                        ></i>
-
-                        <span>
-                            Imagens
-                        </span>
-
-                        <strong>
-                            0
-                        </strong>
-
+                    <button id="info-media-images" class="dashboard-info-media-card" type="button">
+                        <i class="fa-regular fa-image"></i>
+                        <span>Imagens</span>
+                        <strong>0</strong>
                     </button>
-
-
-                    <button
-                        id="info-media-files"
-                        class="dashboard-info-media-card"
-                        type="button"
-                    >
-
-                        <i
-                            class="fa-regular fa-file"
-                        ></i>
-
-                        <span>
-                            Arquivos
-                        </span>
-
-                        <strong>
-                            0
-                        </strong>
-
+                    <button id="info-media-files" class="dashboard-info-media-card" type="button">
+                        <i class="fa-regular fa-file"></i>
+                        <span>Arquivos</span>
+                        <strong>0</strong>
                     </button>
-
-
                 </div>
-
-
             </section>
-
-
-            <!-- =================================================
-                 OPTIONS
-            ================================================== -->
 
             <section class="dashboard-info-section dashboard-info-options">
-
-
-                <div class="dashboard-info-section-title">
-
-                    <span>
-                        OPÇÕES
-                    </span>
-
-                </div>
-
-
-                <button
-                    id="info-mute-btn"
-                    class="dashboard-info-option"
-                    type="button"
-                >
-
-                    <span>
-
-                        <i
-                            class="fa-solid fa-bell-slash"
-                        ></i>
-
-                        Silenciar notificações
-
-                    </span>
-
-
-                    <i
-                        class="fa-solid fa-chevron-right"
-                    ></i>
-
+                <div class="dashboard-info-section-title"><span>OPÇÕES</span></div>
+                <button id="info-mute-btn" class="dashboard-info-option" type="button">
+                    <span><i class="fa-solid fa-bell-slash"></i> Silenciar notificações</span>
+                    <i class="fa-solid fa-chevron-right"></i>
                 </button>
-
-
-                <button
-                    id="info-search-btn"
-                    class="dashboard-info-option"
-                    type="button"
-                >
-
-                    <span>
-
-                        <i
-                            class="fa-solid fa-magnifying-glass"
-                        ></i>
-
-                        Pesquisar conversa
-
-                    </span>
-
-
-                    <i
-                        class="fa-solid fa-chevron-right"
-                    ></i>
-
+                <button id="info-search-btn" class="dashboard-info-option" type="button">
+                    <span><i class="fa-solid fa-magnifying-glass"></i> Pesquisar conversa</span>
+                    <i class="fa-solid fa-chevron-right"></i>
                 </button>
-
-
-                <button
-                    id="info-block-btn"
-                    class="dashboard-info-option danger"
-                    type="button"
-                >
-
-                    <span>
-
-                        <i
-                            class="fa-solid fa-ban"
-                        ></i>
-
-                        Bloquear usuário
-
-                    </span>
-
-
-                    <i
-                        class="fa-solid fa-chevron-right"
-                    ></i>
-
+                <button id="info-block-btn" class="dashboard-info-option danger" type="button">
+                    <span><i class="fa-solid fa-ban"></i> Bloquear usuário</span>
+                    <i class="fa-solid fa-chevron-right"></i>
                 </button>
-
-
             </section>
-
-
         </aside>
 
-
     </div>
 
-
-    <!-- =========================================================
-         ADD FRIEND MODAL
-    ========================================================== -->
-
-    <div
-        id="add-friend-modal"
-        class="modal-overlay hidden"
-    >
-
-
+    <!-- ADD FRIEND MODAL -->
+    <div id="add-friend-modal" class="modal-overlay hidden">
         <div class="modal-card">
-
-
-            <!-- MODAL HEADER -->
-
             <div class="modal-header">
-
-
                 <div>
-
-                    <span class="modal-eyebrow">
-                        NODE.GG
-                    </span>
-
-                    <h3>
-                        Adicionar Amigo
-                    </h3>
-
+                    <span class="modal-eyebrow">NODE.GG</span>
+                    <h3>Adicionar Amigo</h3>
                 </div>
-
-
-                <button
-                    id="close-modal-btn"
-                    class="modal-close-btn"
-                    type="button"
-                    aria-label="Fechar"
-                >
-
-                    <i
-                        class="fa-solid fa-xmark"
-                    ></i>
-
+                <button id="close-modal-btn" class="modal-close-btn" type="button" aria-label="Fechar">
+                    <i class="fa-solid fa-xmark"></i>
                 </button>
-
-
             </div>
-
-
-            <!-- MODAL BODY -->
-
             <div class="modal-body">
-
-
-                <p>
-
-                    Insira o nome de usuário para enviar
-                    uma solicitação de amizade.
-
-                </p>
-
-
-                <form
-                    id="modal-add-friend-form"
-                >
-
-
-                    <input
-                        type="text"
-                        id="modal-username-input"
-                        class="modal-input"
-                        placeholder="Ex: GamerPro"
-                        required
-                        autocomplete="off"
-                    >
-
-
+                <p>Insira o nome de usuário para enviar uma solicitação de amizade.</p>
+                <form id="modal-add-friend-form">
+                    <input type="text" id="modal-username-input" class="modal-input" placeholder="Ex: GamerPro" required autocomplete="off">
                     <div class="modal-actions">
-
-
-                        <button
-                            type="button"
-                            id="cancel-modal-btn"
-                            class="btn btn-secondary"
-                        >
-
-                            Cancelar
-
-                        </button>
-
-
-                        <button
-                            type="submit"
-                            class="btn btn-primary"
-                        >
-
-                            <i
-                                class="fa-solid fa-user-plus"
-                            ></i>
-
+                        <button type="button" id="cancel-modal-btn" class="btn btn-secondary">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fa-solid fa-user-plus"></i>
                             Enviar Solicitação
-
                         </button>
-
-
                     </div>
-
-
                 </form>
-
-
             </div>
-
-
         </div>
-
-
     </div>
 
+    <!-- TOAST NOTIFICATIONS -->
+    <div id="toast-container" class="toast-container"></div>
 
-    <!-- =========================================================
-         TOAST NOTIFICATIONS
-    ========================================================== -->
-
-    <div
-        id="toast-container"
-        class="toast-container"
-    ></div>
-
-
-    <!-- =========================================================
-         JAVASCRIPT
-         ---------------------------------------------------------
-         Ordem:
-
-         1. dashboard.js
-         2. chat.js
-
-         Mantida para preservar a lógica atual.
-    ========================================================== -->
-
+    <!-- SCRIPTS -->
     <script src="./dashboard.js"></script>
-
     <script src="./chat/chat.js"></script>
-
-
 </body>
 
 </html>
