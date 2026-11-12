@@ -1,4 +1,4 @@
-const SERVER_URL = 'https://node-server-b8j3.onrender.com';
+const SERVER_URL = 'https://node-server-9sza.onrender.com';
 
 let socket = null;
 let currentAction = null;
