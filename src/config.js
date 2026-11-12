@@ -1,0 +1,1 @@
+export const CONFIG={HTTP:"https://node-server-9sza.onrender.com",WS:"wss://node-server-9sza.onrender.com",TOKEN:"nodegg.session",USER:"nodegg.user",PUSH_KEY:"/api/push/public-key"};
