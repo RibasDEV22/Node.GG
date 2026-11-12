@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
     ===================================================== */
 
     const CONFIG = {
-        SERVER_URL: 'https://node-server-b8j3.onrender.com',
+        SERVER_URL: 'https://node-server-9sza.onrender.com',
 
         PING_INTERVAL: 10000,
 
