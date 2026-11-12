@@ -15,7 +15,7 @@
 
     const CONFIG = {
         SERVER_URL:
-            'https://node-server-b8j3.onrender.com',
+            'https://node-server-9sza.onrender.com',
 
         REQUEST_TIMEOUT:
             15000,
