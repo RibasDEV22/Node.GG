@@ -21,6 +21,8 @@ function icon(name,size=18){
   trash:'<path d="M3 6h18M8 6V4h8v2m3 0-1 14H6L5 6"/><path d="M10 11v5m4-5v5"/>',
   check:'<path d="m5 12 4 4L19 6"/>',
   close:'<path d="m18 6-12 12M6 6l12 12"/>',
+  image:'<rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/>',
+  upload:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5M12 3v12"/>',
   device:'<rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8m-4-4v4"/>',
   mic:'<rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3m-4 0h8"/>',
   camera:'<rect x="3" y="6" width="13" height="12" rx="2"/><path d="m16 10 5-3v10l-5-3z"/>',
@@ -108,7 +110,153 @@ async function openGroup(id){
 async function loadNotifications(){let r=await S.ws.request({type:"get_notifications",limit:60},"notifications_list");S.notifications=r.notifications||[];if($("#notification-count"))$("#notification-count").textContent=S.notifications.filter(n=>!n.readAt&&!n.read_at).length}
 function notifications(){let v=$("#view");v.innerHTML='<div class="welcome"><div><h2>Notificações</h2><p>Atualizações e atividades da sua conta.</p></div><button class="btn" id="markall">Marcar tudo como lido</button></div><section class="panel" id="notices"></section>';$("#notices").innerHTML=S.notifications.map(n=>'<div class="listrow"><div class="avatar">'+icon("bell",17)+'</div><div class="person"><strong>'+esc(n.title||"Notificação")+'</strong><span>'+esc(n.body||"")+'</span></div>'+(!(n.readAt||n.read_at)?'<button class="btn" data-read="'+esc(n.id)+'">Marcar lida</button>':'<span class="count">Lida</span>')+'</div>').join("")||'<div class="empty">Nenhuma notificação.</div>';$("#markall").onclick=()=>{S.ws.send({type:"notifications_mark_all_read"});S.notifications.forEach(n=>n.readAt=Date.now());notifications()};$$("[data-read]").forEach(b=>b.onclick=()=>S.ws.send({type:"notification_mark_read",notificationId:b.dataset.read}))}
 function settings(){let v=$("#view");v.innerHTML='<div class="settingsgrid"><section class="panel"><button class="nav active" data-tab="profile"><i>'+icon("users",17)+'</i>Perfil</button><button class="nav" data-tab="presence"><i>'+icon("bell",17)+'</i>Presença</button><button class="nav" data-tab="sessions"><i>'+icon("device",17)+'</i>Dispositivos</button><button class="nav" data-tab="push"><i>'+icon("bell",17)+'</i>Notificações</button></section><section class="panel settingsbody" id="settingsbody"></section></div>';settingTab("profile");$$("[data-tab]").forEach(b=>b.onclick=()=>{ $$("[data-tab]").forEach(x=>x.classList.toggle("active",x===b));settingTab(b.dataset.tab)})}
-function settingTab(t){let e=$("#settingsbody"),u=S.user||{};if(t==="profile"){e.innerHTML='<h2>Seu perfil</h2><p>As informações que outras pessoas veem no Node.GG.</p><form id="profile"><div class="field"><label>Nome de exibição</label><input id="display" maxlength="30" value="'+esc(u.displayName||"")+'" required></div><div class="field"><label>Biografia</label><textarea id="bio" maxlength="200" rows="3">'+esc(u.bio||"")+'</textarea></div><div class="field"><label>URL do avatar</label><input id="avatarurl" value="'+esc(u.avatar||"")+'" placeholder="https://…"></div><button class="btn primary">Salvar alterações</button></form>';$("#profile").onsubmit=x=>{x.preventDefault();S.ws.send({type:"update_profile",displayName:$("#display").value.trim(),bio:$("#bio").value.trim(),avatar:$("#avatarurl").value.trim()})}}if(t==="presence"){e.innerHTML='<h2>Presença</h2><p>Escolha como seu status aparece para seus amigos.</p><div class="field"><label>Status</label><select id="status"><option value="online">Online</option><option value="idle">Ausente</option><option value="dnd">Não perturbe</option><option value="invisible">Invisível</option></select></div><div class="field"><label>Status personalizado</label><input id="custom" maxlength="80"></div><div class="field"><label>Emoji</label><input id="emoji" maxlength="16" placeholder="🛠️"></div><div class="field"><label>Duração</label><select id="duration"><option value="3600000">1 hora</option><option value="14400000">4 horas</option><option value="43200000">12 horas</option><option value="86400000">24 horas</option><option value="604800000">7 dias</option><option value="0">Sem expiração</option></select></div><button class="btn primary" id="savepresence">Atualizar presença</button>';$("#status").value=S.presence;$("#savepresence").onclick=()=>S.ws.send({type:"presence_update",status:$("#status").value,customStatus:$("#custom").value,customStatusEmoji:$("#emoji").value,customStatusDurationMs:+$("#duration").value})}if(t==="sessions"){e.innerHTML='<h2>Dispositivos conectados</h2><p>Gerencie os dispositivos que têm acesso à sua conta.</p><div id="sessionlist"></div><button class="btn danger" id="revokeothers">Encerrar outras sessões</button>';S.ws.send({type:"session_list"});$("#revokeothers").onclick=()=>S.ws.send({type:"session_revoke_others"})}if(t==="push"){e.innerHTML='<h2>Notificações do navegador</h2><p>Receba avisos quando chegar uma mensagem ou chamada.</p><button class="btn primary" id="enablepush">Ativar notificações</button>';$("#enablepush").onclick=enablePush}}
+
+async function openAvatarEditor(file,onApply){
+ if(!file)return;
+ if(!["image/jpeg","image/png","image/webp"].includes(file.type)){
+  toast("Escolha uma imagem PNG, JPG ou WebP.","error");return;
+ }
+ if(file.size>20*1024*1024){
+  toast("A imagem original precisa ter menos de 20 MB.","error");return;
+ }
+ const objectUrl=URL.createObjectURL(file);
+ const overlay=document.createElement("div");
+ overlay.className="avatar-editor-backdrop";
+ overlay.innerHTML='<section class="avatar-editor" role="dialog" aria-modal="true" aria-labelledby="avatarEditorTitle"><header class="avatar-editor-head"><div><strong id="avatarEditorTitle">Ajustar foto de perfil</strong><span>Arraste a imagem para posicionar e ajuste o zoom</span></div><button type="button" class="btn avatar-editor-close" id="avatarEditorClose" aria-label="Fechar">×</button></header><div class="avatar-editor-main"><div class="avatar-crop-stage" id="avatarCropStage"><img id="avatarCropImage" alt="Prévia do recorte" draggable="false"></div><p class="avatar-crop-hint">Prévia do recorte quadrado · arraste para mover</p><div class="avatar-editor-sliders"><label><span>Zoom <output id="avatarZoomValue">100%</output></span><input id="avatarZoom" type="range" min="100" max="300" value="100" step="1"></label><label><span>Horizontal</span><input id="avatarPositionX" type="range" min="-100" max="100" value="0" step="1"></label><label><span>Vertical</span><input id="avatarPositionY" type="range" min="-100" max="100" value="0" step="1"></label></div></div><footer class="avatar-editor-actions"><button type="button" class="btn" id="avatarReset">Centralizar</button><div><button type="button" class="btn" id="avatarCancel">Cancelar</button><button type="button" class="btn primary" id="avatarApply">'+icon("check",16)+' Usar imagem</button></div></footer></section>';
+ document.body.append(overlay);
+ const image=$("#avatarCropImage",overlay),stage=$("#avatarCropStage",overlay);
+ const zoomInput=$("#avatarZoom",overlay),xInput=$("#avatarPositionX",overlay),yInput=$("#avatarPositionY",overlay);
+ const zoomValue=$("#avatarZoomValue",overlay),applyButton=$("#avatarApply",overlay);
+ let zoom=1,offsetX=0,offsetY=0,drag=null,closed=false,stageSize=stage.clientWidth||280;
+ const close=()=>{
+  if(closed)return;closed=true;URL.revokeObjectURL(objectUrl);overlay.remove();
+  document.removeEventListener("keydown",onKey);
+ };
+ const onKey=e=>{if(e.key==="Escape")close()};
+ document.addEventListener("keydown",onKey);
+ $("#avatarEditorClose",overlay).onclick=close;
+ $("#avatarCancel",overlay).onclick=close;
+ overlay.addEventListener("click",e=>{if(e.target===overlay)close()});
+
+ const metrics=()=>{
+  stageSize=stage.clientWidth||280;
+  const fit=Math.max(stageSize/image.naturalWidth,stageSize/image.naturalHeight);
+  const width=image.naturalWidth*fit*zoom;
+  const height=image.naturalHeight*fit*zoom;
+  return {width,height,maxX:Math.max(0,(width-stageSize)/2),maxY:Math.max(0,(height-stageSize)/2)};
+ };
+ const sync=()=>{
+  const m=metrics();
+  offsetX=Math.max(-m.maxX,Math.min(m.maxX,offsetX));
+  offsetY=Math.max(-m.maxY,Math.min(m.maxY,offsetY));
+  image.style.width=m.width+"px";
+  image.style.height=m.height+"px";
+  image.style.transform="translate(-50%,-50%) translate("+offsetX+"px,"+offsetY+"px)";
+  zoomValue.textContent=Math.round(zoom*100)+"%";
+  xInput.value=m.maxX?String(Math.round(offsetX/m.maxX*100)):"0";
+  yInput.value=m.maxY?String(Math.round(offsetY/m.maxY*100)):"0";
+ };
+ try{
+  image.src=objectUrl;
+  await image.decode();
+  if(image.naturalWidth*image.naturalHeight>30000000){
+   close();toast("A imagem tem resolução muito alta. Escolha uma imagem menor.","error");return;
+  }
+  sync();
+ }catch(error){
+  close();toast("Não foi possível abrir essa imagem.","error");return;
+ }
+
+ zoomInput.addEventListener("input",()=>{
+  const old=metrics(),rx=old.maxX?offsetX/old.maxX:0,ry=old.maxY?offsetY/old.maxY:0;
+  zoom=Number(zoomInput.value)/100;
+  const next=metrics();offsetX=rx*next.maxX;offsetY=ry*next.maxY;sync();
+ });
+ xInput.addEventListener("input",()=>{const m=metrics();offsetX=m.maxX*Number(xInput.value)/100;sync()});
+ yInput.addEventListener("input",()=>{const m=metrics();offsetY=m.maxY*Number(yInput.value)/100;sync()});
+ $("#avatarReset",overlay).onclick=()=>{zoom=1;offsetX=0;offsetY=0;zoomInput.value="100";sync()};
+ stage.addEventListener("pointerdown",e=>{
+  if(e.button!==0)return;
+  drag={x:e.clientX,y:e.clientY,id:e.pointerId};
+  stage.classList.add("dragging");
+  stage.setPointerCapture(e.pointerId);
+ });
+ stage.addEventListener("pointermove",e=>{
+  if(!drag||drag.id!==e.pointerId)return;
+  offsetX+=e.clientX-drag.x;offsetY+=e.clientY-drag.y;
+  drag.x=e.clientX;drag.y=e.clientY;sync();
+ });
+ const stopDrag=e=>{
+  if(!drag||drag.id!==e.pointerId)return;
+  drag=null;stage.classList.remove("dragging");
+ };
+ stage.addEventListener("pointerup",stopDrag);
+ stage.addEventListener("pointercancel",stopDrag);
+
+ applyButton.onclick=async()=>{
+  applyButton.disabled=true;
+  applyButton.textContent="Preparando imagem…";
+  try{
+   const size=stage.clientWidth||280,m=metrics();
+   const sx=(size-m.width)/2+offsetX,sy=(size-m.height)/2+offsetY;
+   let result=null;
+   for(const outputSize of [512,448,384,320,256]){
+    const canvas=document.createElement("canvas");canvas.width=outputSize;canvas.height=outputSize;
+    const ctx=canvas.getContext("2d",{alpha:false});
+    if(!ctx)throw new Error("Não foi possível processar a imagem.");
+    ctx.fillStyle="#101414";ctx.fillRect(0,0,outputSize,outputSize);
+    const factor=outputSize/size;
+    ctx.drawImage(image,sx*factor,sy*factor,m.width*factor,m.height*factor);
+    for(const quality of [.84,.76,.68,.60,.52]){
+     let blob=await new Promise(resolve=>canvas.toBlob(resolve,"image/webp",quality));
+     if(!blob)throw new Error("O navegador não conseguiu comprimir a imagem.");
+     if(blob.type!=="image/webp"){
+      blob=await new Promise(resolve=>canvas.toBlob(resolve,"image/jpeg",quality));
+      if(!blob)throw new Error("Falha ao converter a imagem.");
+     }
+     const dataUrl=await new Promise((resolve,reject)=>{
+      const reader=new FileReader();
+      reader.onload=()=>resolve(reader.result);
+      reader.onerror=()=>reject(new Error("Falha ao ler a imagem processada."));
+      reader.readAsDataURL(blob);
+     });
+     if(typeof dataUrl==="string"&&dataUrl.length<=280*1024){result=dataUrl;break}
+    }
+    if(result)break;
+   }
+   if(!result)throw new Error("Não foi possível reduzir a imagem o suficiente. Tente uma foto diferente.");
+   onApply(result);close();
+   toast("Imagem ajustada. Salve as alterações do perfil.","success");
+  }catch(error){
+   applyButton.disabled=false;applyButton.innerHTML=icon("check",16)+" Tentar novamente";
+   toast(error.message||"Falha ao preparar a imagem.","error");
+  }
+ };
+}
+
+function settingTab(t){let e=$("#settingsbody"),u=S.user||{};if(t==="profile"){
+ let selectedAvatar=/^data:image\//i.test(u.avatar||"")?u.avatar:null;
+ const avatarUrlValue=selectedAvatar?"":(u.avatar||"");
+ e.innerHTML='<h2>Seu perfil</h2><p>As informações que outras pessoas veem no Node.GG.</p><form id="profile"><div class="avatar-upload-row"><div class="avatar-profile-preview" id="avatarPreview">'+avatar(u)+'</div><div class="avatar-upload-info"><strong>Sua foto de perfil</strong><span>Escolha uma imagem do PC e ajuste o enquadramento na hora.</span><div class="avatar-upload-actions"><button type="button" class="btn" id="chooseAvatar">'+icon("image",16)+' Escolher imagem</button><button type="button" class="btn quiet" id="removeAvatar">'+icon("trash",15)+' Remover</button></div><input id="avatarFile" type="file" accept="image/png,image/jpeg,image/webp" hidden><small>PNG, JPG ou WebP · até 20 MB. A imagem será otimizada automaticamente.</small></div></div><div class="field"><label>Nome de exibição</label><input id="display" maxlength="30" value="'+esc(u.displayName||"")+'" required></div><div class="field"><label>Biografia</label><textarea id="bio" maxlength="200" rows="3">'+esc(u.bio||"")+'</textarea></div><div class="field"><label>Ou use uma URL de imagem</label><input id="avatarurl" value="'+esc(avatarUrlValue)+'" placeholder="https://…"></div><button class="btn primary">'+icon("check",16)+' Salvar alterações</button></form>';
+ $("#chooseAvatar").onclick=()=>$("#avatarFile").click();
+ $("#avatarFile").onchange=async ev=>{
+  const selectedFile=ev.target.files?.[0];ev.target.value="";
+  if(!selectedFile)return;
+  await openAvatarEditor(selectedFile,dataUrl=>{
+   selectedAvatar=dataUrl;
+   $("#avatarurl").value="";
+   $("#avatarPreview").innerHTML=avatar({avatar:dataUrl});
+  });
+ };
+ $("#removeAvatar").onclick=()=>{
+  selectedAvatar=null;$("#avatarurl").value="";$("#avatarPreview").innerHTML=avatar({});
+ };
+ $("#profile").onsubmit=x=>{
+  x.preventDefault();
+  const remoteUrl=$("#avatarurl").value.trim();
+  S.ws.send({type:"update_profile",displayName:$("#display").value.trim(),bio:$("#bio").value.trim(),avatar:remoteUrl||selectedAvatar||""});
+ };
+}if(t==="presence"){e.innerHTML='<h2>Presença</h2><p>Escolha como seu status aparece para seus amigos.</p><div class="field"><label>Status</label><select id="status"><option value="online">Online</option><option value="idle">Ausente</option><option value="dnd">Não perturbe</option><option value="invisible">Invisível</option></select></div><div class="field"><label>Status personalizado</label><input id="custom" maxlength="80"></div><div class="field"><label>Emoji</label><input id="emoji" maxlength="16" placeholder="🛠️"></div><div class="field"><label>Duração</label><select id="duration"><option value="3600000">1 hora</option><option value="14400000">4 horas</option><option value="43200000">12 horas</option><option value="86400000">24 horas</option><option value="604800000">7 dias</option><option value="0">Sem expiração</option></select></div><button class="btn primary" id="savepresence">Atualizar presença</button>';$("#status").value=S.presence;$("#savepresence").onclick=()=>S.ws.send({type:"presence_update",status:$("#status").value,customStatus:$("#custom").value,customStatusEmoji:$("#emoji").value,customStatusDurationMs:+$("#duration").value})}if(t==="sessions"){e.innerHTML='<h2>Dispositivos conectados</h2><p>Gerencie os dispositivos que têm acesso à sua conta.</p><div id="sessionlist"></div><button class="btn danger" id="revokeothers">Encerrar outras sessões</button>';S.ws.send({type:"session_list"});$("#revokeothers").onclick=()=>S.ws.send({type:"session_revoke_others"})}if(t==="push"){e.innerHTML='<h2>Notificações do navegador</h2><p>Receba avisos quando chegar uma mensagem ou chamada.</p><button class="btn primary" id="enablepush">Ativar notificações</button>';$("#enablepush").onclick=enablePush}}
 function presenceDialog(){let m=showModal("Sua presença","Escolha como deseja aparecer.",'<div class="field"><select id="quick"><option value="online">Online</option><option value="idle">Ausente</option><option value="dnd">Não perturbe</option><option value="invisible">Invisível</option></select></div><button class="btn primary" id="setquick">Salvar status</button>');$("#setquick").onclick=()=>{S.ws.send({type:"presence_update",status:$("#quick").value});m.remove()}}
 async function enablePush(){try{if(!("serviceWorker"in navigator)||!("PushManager"in window))throw Error("Notificações push não são suportadas.");let k=await api(CONFIG.PUSH_KEY);if(!k.enabled)throw Error("O servidor ainda não configurou notificações push.");let reg=await navigator.serviceWorker.register("./sw.js"),p=await Notification.requestPermission();if(p!=="granted")throw Error("Permissão não concedida.");let sub=await reg.pushManager.getSubscription();if(!sub){let raw=atob((k.publicKey+"===").replace(/-/g,"+").replace(/_/g,"/"));sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:Uint8Array.from(raw,c=>c.charCodeAt(0))})}S.ws.send({type:"save_push_subscription",subscription:sub.toJSON()});toast("Notificações ativadas.","success")}catch(e){toast(e.message,"error")}}
 function sessionsList(a){let e=$("#sessionlist");if(!e)return;e.innerHTML=a.map(s=>'<div class="listrow"><div class="avatar">'+icon("device",17)+'</div><div class="person"><strong>'+esc(s.deviceName||s.browser||"Dispositivo")+(s.isCurrent?" · Este dispositivo":"")+'</strong><span>'+esc(s.state)+' · '+(s.lastSeen?new Date(s.lastSeen).toLocaleString("pt-BR"):"—")+'</span></div>'+(s.isCurrent?"":'<button class="btn danger" data-revoke="'+esc(s.sessionId)+'">Encerrar</button>')+'</div>').join("")||'<div class="empty">Nenhuma sessão.</div>';$$("[data-revoke]").forEach(b=>b.onclick=()=>S.ws.send({type:"session_revoke",sessionId:b.dataset.revoke}))}
