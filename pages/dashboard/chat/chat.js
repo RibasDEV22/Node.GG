@@ -550,7 +550,7 @@
         if (!url) return '';
 
         // Permite apenas imagens HTTP(S) ou data:image; bloqueia javascript: e outros esquemas.
-        if (/^https?:\\/\\//i.test(url) || /^data:image\\/(?:png|jpe?g|gif|webp|avif);base64,/i.test(url)) {
+        if (/^https?:\/\//i.test(url) || /^data:image\/(?:png|jpe?g|gif|webp|avif);base64,/i.test(url)) {
             return url;
         }
 
@@ -561,13 +561,13 @@
     function isEmojiOnly(value) {
         const text = safeText(value).trim();
 
-        if (!text || !/[\\p{Extended_Pictographic}\\p{Regional_Indicator}]/u.test(text)) {
+        if (!text || !/[\p{Extended_Pictographic}\p{Regional_Indicator}]/u.test(text)) {
             return false;
         }
 
-        const withoutKeycaps = text.replace(/[0-9#*]\\uFE0F?\\u20E3/gu, '');
+        const withoutKeycaps = text.replace(/[0-9#*]\uFE0F?\u20E3/gu, '');
         const remaining = withoutKeycaps
-            .replace(/[\\p{Extended_Pictographic}\\p{Regional_Indicator}\\p{Emoji_Modifier}\\uFE0F\\u200D\\u20E3]/gu, '')
+            .replace(/[\p{Extended_Pictographic}\p{Regional_Indicator}\p{Emoji_Modifier}\uFE0F\u200D\u20E3]/gu, '')
             .trim();
 
         return remaining.length === 0;
