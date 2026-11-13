@@ -1622,3 +1622,16 @@ button:disabled,.btn:disabled {
     .avatar-editor-actions>div { justify-content:flex-end }
     .avatar-editor-actions>.btn { align-self:flex-start }
 }
+
+
+/* Twemoji — emojis consistentes em toda a interface */
+.twemoji {
+    display:inline-block;
+    width:1.15em;
+    height:1.15em;
+    margin:0 .035em;
+    vertical-align:-.22em;
+    object-fit:contain;
+    user-select:none;
+    pointer-events:none;
+}
