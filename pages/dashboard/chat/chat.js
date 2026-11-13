@@ -594,11 +594,21 @@
         preview.textContent = value;
         preview.classList.toggle('is-empty', !value);
 
+        const inputStyle = window.getComputedStyle(input);
+        preview.style.left = `${input.offsetLeft}px`;
+        preview.style.top = `${input.offsetTop}px`;
+        preview.style.width = `${input.offsetWidth}px`;
+        preview.style.height = `${input.offsetHeight}px`;
+        preview.style.paddingLeft = inputStyle.paddingLeft;
+        preview.style.paddingRight = inputStyle.paddingRight;
+        preview.style.font = inputStyle.font;
+        preview.style.letterSpacing = inputStyle.letterSpacing;
+        preview.style.transform = `translateX(${-input.scrollLeft}px)`;
+
         if (value && window.NodeTwemoji?.render) {
             window.NodeTwemoji.render(preview);
         }
 
-        preview.style.transform = `translateX(${-input.scrollLeft}px)`;
         wrapper.classList.toggle('has-emoji-preview', Boolean(value));
     }
 
