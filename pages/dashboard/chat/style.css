@@ -30,11 +30,28 @@
 }
 
 .message-row {
-    display: flex;
-    justify-content: flex-end;
+    display: flex !important;
+    justify-content: flex-end !important;
+    align-items: flex-start;
     width: 100%;
     min-width: 0;
     animation: nodeMessageIn .2s ease both;
+}
+
+.message-row.incoming,
+.message-row.outgoing {
+    justify-content: flex-end !important;
+}
+
+.message-stack {
+    margin-left: auto;
+    margin-right: 0;
+}
+
+.message-author-avatar {
+    display: block;
+    visibility: visible;
+    opacity: 1;
 }
 
 .message-stack {
