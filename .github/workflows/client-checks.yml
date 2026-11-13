@@ -4,6 +4,7 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+
 jobs:
   syntax:
     runs-on: ubuntu-latest
@@ -13,7 +14,12 @@ jobs:
         with:
           node-version: 22
       - name: Check client JavaScript syntax
+        shell: bash
         run: |
-          node --input-type=module --check < src/app.js
-          node --input-type=module --check < src/realtime.js
+          set -euo pipefail
+          echo "Checking browser modules..."
           node --input-type=module --check < src/config.js
+          node --input-type=module --check < src/realtime.js
+          node --input-type=module --check < src/app.js
+          node --check sw.js
+          echo "All client JavaScript files passed syntax checks."
