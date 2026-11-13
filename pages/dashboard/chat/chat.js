@@ -544,6 +544,65 @@
     }
 
 
+    function getSafeAvatarUrl(value) {
+        const url = safeText(value).trim();
+
+        if (!url) return '';
+
+        // Permite apenas imagens HTTP(S) ou data:image; bloqueia javascript: e outros esquemas.
+        if (/^https?:\\/\\//i.test(url) || /^data:image\\/(?:png|jpe?g|gif|webp|avif);base64,/i.test(url)) {
+            return url;
+        }
+
+        return '';
+    }
+
+
+    function isEmojiOnly(value) {
+        const text = safeText(value).trim();
+
+        if (!text || !/[\\p{Extended_Pictographic}\\p{Regional_Indicator}]/u.test(text)) {
+            return false;
+        }
+
+        const withoutKeycaps = text.replace(/[0-9#*]\\uFE0F?\\u20E3/gu, '');
+        const remaining = withoutKeycaps
+            .replace(/[\\p{Extended_Pictographic}\\p{Regional_Indicator}\\p{Emoji_Modifier}\\uFE0F\\u200D\\u20E3]/gu, '')
+            .trim();
+
+        return remaining.length === 0;
+    }
+
+
+    function updateComposerEmojiPreview() {
+        if (!els.messageInput) return;
+
+        const input = els.messageInput;
+        const wrapper = input.parentElement;
+        if (!wrapper) return;
+
+        let preview = wrapper.querySelector('.nodegg-emoji-preview');
+
+        if (!preview) {
+            preview = document.createElement('div');
+            preview.className = 'nodegg-emoji-preview';
+            preview.setAttribute('aria-hidden', 'true');
+            wrapper.insertBefore(preview, input);
+        }
+
+        const value = input.value || '';
+        preview.textContent = value;
+        preview.classList.toggle('is-empty', !value);
+
+        if (value && window.NodeTwemoji?.render) {
+            window.NodeTwemoji.render(preview);
+        }
+
+        preview.style.transform = `translateX(${-input.scrollLeft}px)`;
+        wrapper.classList.toggle('has-emoji-preview', Boolean(value));
+    }
+
+
     function formatTime(timestamp) {
         if (!timestamp) {
             return '';
@@ -882,70 +941,67 @@
 
         els.messagesContainer.innerHTML =
             messages
-                .map(
-                    message => {
-                        const sender =
-                            safeText(
-                                message.sender ||
-                                message.senderUsername
-                            );
+                .map(message => {
+                    const sender = safeText(
+                        message.sender ||
+                        message.senderUsername ||
+                        message.username
+                    );
 
-                        const isMine =
-                            isCurrentUser(
-                                sender
-                            );
+                    const isMine = isCurrentUser(sender);
+                    const conversation = findConversation(
+                        isMine ? state.activeConversation : sender
+                    );
 
-                        const bubbleClass =
-                            isMine
-                                ? 'outgoing'
-                                : 'incoming';
+                    const content = safeText(message.content);
+                    const timestamp =
+                        message.timestamp ||
+                        message.createdAt ||
+                        message.created_at ||
+                        0;
 
-                        const content =
-                            safeText(
-                                message.content
-                            );
+                    const displayName = safeText(
+                        (isMine
+                            ? state.currentUser?.displayName
+                            : message.senderDisplayName || message.displayName ||
+                              message.senderName || conversation?.displayName) ||
+                        (isMine ? state.currentUser?.username : sender) ||
+                        sender ||
+                        'Usuário'
+                    );
 
-                        const timestamp =
-                            message.timestamp ||
-                            message.createdAt ||
-                            message.created_at ||
-                            0;
+                    const avatarUrl = getSafeAvatarUrl(
+                        isMine
+                            ? state.currentUser?.avatar
+                            : message.senderAvatar || message.avatar ||
+                              message.senderAvatarUrl || message.avatarUrl ||
+                              conversation?.avatar || conversation?.avatarUrl
+                    );
 
-                        return `
-                            <div
-                                class="message-row ${bubbleClass}"
-                            >
-                                <div
-                                    class="message-bubble"
-                                >
-                                    <div class="message-content">
-                                        ${escapeHtml(content)}
-                                    </div>
+                    const emojiOnly = isEmojiOnly(content);
+                    const avatarMarkup = avatarUrl
+                        ? `<img class="message-author-avatar" src="${escapeHtml(avatarUrl)}" alt="" loading="lazy" referrerpolicy="no-referrer">`
+                        : `<span class="message-author-fallback">${escapeHtml(initials(displayName))}</span>`;
 
+                    return `
+                        <article class="message-row ${isMine ? 'outgoing' : 'incoming'} ${emojiOnly ? 'emoji-only' : ''}">
+                            <div class="message-stack">
+                                <div class="message-author">
+                                    ${avatarMarkup}
+                                    <span class="message-author-name">${escapeHtml(displayName)}</span>
+                                </div>
+
+                                <div class="message-bubble">
+                                    <div class="message-content">${escapeHtml(content)}</div>
                                     <div class="message-meta">
-                                        <span>
-                                            ${escapeHtml(
-                                                formatTime(
-                                                    timestamp
-                                                )
-                                            )}
-                                        </span>
-
-                                        ${
-                                            isMine
-                                                ? `
-                                                    <span class="read-check">
-                                                        ✓
-                                                    </span>
-                                                `
-                                                : ''
-                                        }
+                                        <span>${escapeHtml(formatTime(timestamp))}</span>
+                                        ${isMine ? '<span class="read-check" aria-label="Enviada">✓</span>' : ''}
                                     </div>
                                 </div>
                             </div>
-                        `;
-                    }
-                )
+                        </article>
+                    `;
+                })
                 .join('');
 
         if (
@@ -1211,6 +1267,7 @@
 
         els.messageInput.value =
             '';
+        updateComposerEmojiPreview();
 
         try {
             const response =
@@ -1273,6 +1330,7 @@
         } catch (error) {
             els.messageInput.value =
                 content;
+            updateComposerEmojiPreview();
 
             console.error(
                 '[Node.GG Chat] Erro ao enviar mensagem:',
@@ -1459,6 +1517,18 @@
         }
 
         if (els.messageInput) {
+            els.messageInput.addEventListener(
+                'input',
+                updateComposerEmojiPreview
+            );
+
+            els.messageInput.addEventListener(
+                'scroll',
+                updateComposerEmojiPreview
+            );
+
+            updateComposerEmojiPreview();
+
             els.messageInput.addEventListener(
                 'keydown',
                 event => {
