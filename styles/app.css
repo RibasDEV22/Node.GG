@@ -1061,12 +1061,9 @@ button {
 }
 
 
-
-/* Node.GG interaction and motion polish */
+/* Node.GG UI polish — compatible with the current app.js markup */
 :root {
     --green-bright:#20e59a;
-    --green-glow:#00d98222;
-    --surface-raised:#1a2223;
     --ease-out:cubic-bezier(.2,.75,.25,1)
 }
 
@@ -1076,8 +1073,9 @@ body {
         radial-gradient(ellipse at 75% 0%,#00d9820a,transparent 34%),
         var(--bg)
 }
+
+button,input,textarea,select { -webkit-tap-highlight-color:transparent }
 button,.btn,.nav,.chatitem {
-    -webkit-tap-highlight-color:transparent;
     transition:background .18s ease,border-color .18s ease,color .18s ease,
         transform .18s var(--ease-out),box-shadow .18s ease,opacity .18s ease
 }
@@ -1095,7 +1093,7 @@ button:disabled,.btn:disabled {
     display:inline-flex;
     align-items:center;
     justify-content:center;
-    gap:8px;
+    gap:7px;
     min-height:36px
 }
 .btn:hover:not(:disabled) {
@@ -1113,17 +1111,7 @@ button:disabled,.btn:disabled {
     box-shadow:0 7px 22px #00d98230
 }
 .btn.danger:hover:not(:disabled) { background:#53292b;border-color:#a95559 }
-.icon {
-    display:inline-block;
-    flex:none;
-    vertical-align:middle
-}
-.icon-btn {
-    width:38px;
-    min-width:38px;
-    height:38px;
-    padding:0
-}
+
 .rail button {
     display:grid;
     place-items:center;
@@ -1152,25 +1140,20 @@ button:disabled,.btn:disabled {
     justify-content:center;
     flex:none;
     width:19px;
-    height:19px
+    min-width:19px;
+    font-style:normal
 }
-.nav i .icon { width:17px;height:17px }
 .nav.active {
     background:linear-gradient(90deg,#00d9821b,#00d98208);
     box-shadow:inset 2px 0 var(--green)
 }
-.presence-btn { text-transform:capitalize }
-.presence-indicator {
-    width:8px;height:8px;border-radius:50%;
-    background:var(--green);
-    box-shadow:0 0 0 3px #00d9821d,0 0 12px #00d98277
+.dot.online {
+    box-shadow:0 0 0 3px #00d9821b,0 0 12px #00d98277
 }
-.dot.online { box-shadow:0 0 0 3px #00d9821b,0 0 12px #00d98277 }
-.content.view-enter > * {
-    animation:sectionEnter .34s var(--ease-out) both
+
+.content > * {
+    animation:sectionEnter .3s var(--ease-out) both
 }
-.content.view-enter > *:nth-child(2) { animation-delay:35ms }
-.content.view-enter > *:nth-child(3) { animation-delay:70ms }
 .stat,.panel,.chatlist,.chatmain,.settingsbody {
     transition:border-color .2s ease,background .2s ease,box-shadow .2s ease
 }
@@ -1185,7 +1168,6 @@ button:disabled,.btn:disabled {
     transform:scale(1.04);
     border-color:#00d98266
 }
-.group-avatar { color:var(--green) }
 .chatitem {
     min-height:58px;
     border:1px solid transparent
@@ -1194,6 +1176,27 @@ button:disabled,.btn:disabled {
     background:linear-gradient(110deg,#202b2a,#1b2324);
     border-color:#ffffff0b
 }
+
+/* Direct messages use .chat-content; group chats render .chatmain directly. */
+.content.chat-content,
+#view:has(> .chatmain) {
+    display:flex;
+    flex-direction:column;
+    min-height:0;
+    overflow:hidden;
+    padding:0
+}
+#view:has(> .chatmain) > .chatmain {
+    width:100%;
+    height:100%;
+    min-height:0
+}
+.chatlayout {
+    width:100%;
+    min-width:0;
+    min-height:0
+}
+.chatlist,.chatitems,.chatmain { min-height:0 }
 .chathead {
     flex:none;
     background:#121819d9;
@@ -1208,7 +1211,6 @@ button:disabled,.btn:disabled {
 }
 .message {
     animation:messageEnter .24s var(--ease-out) both;
-    animation-delay:calc(var(--message-index,0) * 22ms);
     will-change:transform,opacity
 }
 .message .bubble {
@@ -1221,7 +1223,7 @@ button:disabled,.btn:disabled {
     border-color:#236846
 }
 .msgtools {
-    opacity:.46;
+    opacity:.5;
     transform:translateY(-2px);
     transition:opacity .18s ease,transform .18s ease
 }
@@ -1230,16 +1232,12 @@ button:disabled,.btn:disabled {
     transform:translateY(0)
 }
 .msgtools button {
-    width:29px;height:27px;
-    display:inline-grid;
-    place-items:center;
     transition:background .16s ease,color .16s ease,border-color .16s ease,transform .16s ease
 }
 .msgtools button:hover {
     background:#1b3028;
     transform:translateY(-2px)
 }
-.msgtools .icon { width:14px;height:14px }
 .composer {
     flex:none;
     background:#121718ed;
@@ -1254,9 +1252,7 @@ button:disabled,.btn:disabled {
     background:#1b2524
 }
 .composer textarea { line-height:1.5 }
-.send-btn { min-width:94px }
-.send-btn .icon { transition:transform .2s var(--ease-out) }
-.send-btn:hover .icon { transform:translate(2px,-2px) }
+
 .listrow {
     border-radius:8px;
     transition:background .18s ease
@@ -1271,32 +1267,9 @@ button:disabled,.btn:disabled {
     box-shadow:0 24px 80px #0008
 }
 .toast {
-    display:flex;
-    align-items:center;
-    gap:10px;
-    padding:11px 12px;
-    min-height:48px;
-    box-shadow:0 12px 32px #0005;
-    animation:toastEnter .25s var(--ease-out) both
+    animation:toastEnter .25s var(--ease-out) both;
+    box-shadow:0 12px 32px #0005
 }
-.toast-icon {
-    width:25px;height:25px;
-    display:grid;place-items:center;
-    flex:none;
-    border-radius:8px;
-    color:var(--green);
-    background:#00d98218
-}
-.toast.error .toast-icon { color:#ff8f8f;background:#ff777719 }
-.toast.success .toast-icon { color:#49e8a2 }
-.toast-text { flex:1;line-height:1.45 }
-.toast-close {
-    display:grid;place-items:center;
-    width:26px;height:26px;
-    border:0;border-radius:7px;
-    background:transparent;color:var(--muted)
-}
-.toast-close:hover { background:#ffffff12;color:var(--text) }
 .calloverlay {
     animation:fadeIn .2s ease both;
     backdrop-filter:blur(18px)
@@ -1305,8 +1278,8 @@ button:disabled,.btn:disabled {
     align-items:center;
     background:#111819cc
 }
+.callcontrols { flex-wrap:wrap }
 .callcontrols .btn { min-width:120px }
-.call-toggle .icon,.callcontrols .icon { margin-right:1px }
 .videotile {
     box-shadow:0 12px 38px #0005;
     animation:sectionEnter .32s var(--ease-out) both
@@ -1320,12 +1293,17 @@ button:disabled,.btn:disabled {
 ::selection { background:#00d98250;color:#f4fff9 }
 * { scrollbar-width:thin;scrollbar-color:#34413e transparent }
 *::-webkit-scrollbar { width:8px;height:8px }
-*::-webkit-scrollbar-thumb { background:#34413e;border:2px solid transparent;border-radius:10px;background-clip:padding-box }
+*::-webkit-scrollbar-thumb {
+    background:#34413e;
+    border:2px solid transparent;
+    border-radius:10px;
+    background-clip:padding-box
+}
 *::-webkit-scrollbar-thumb:hover { background:#4b5d56;background-clip:padding-box }
 *::-webkit-scrollbar-track { background:transparent }
 
 @keyframes sectionEnter {
-    from { opacity:0;transform:translateY(9px) }
+    from { opacity:0;transform:translateY(8px) }
     to { opacity:1;transform:translateY(0) }
 }
 @keyframes messageEnter {
@@ -1342,11 +1320,10 @@ button:disabled,.btn:disabled {
 }
 @keyframes fadeIn { from { opacity:0 } to { opacity:1 } }
 
-@media (hover:none) {
+@media(hover:none) {
     .msgtools { opacity:1;transform:none }
 }
 @media(max-width:640px) {
-    .callcontrols { flex-wrap:wrap }
     .callcontrols .btn { min-width:0;flex:1 }
     .toast { max-width:calc(100vw - 28px) }
 }
