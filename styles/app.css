@@ -1335,3 +1335,82 @@ button:disabled,.btn:disabled {
         transition-duration:.01ms!important
     }
 }
+
+
+
+/* Inline SVG icon support for the current app.js */
+.icon {
+    display:inline-block;
+    flex:none;
+    vertical-align:middle;
+    pointer-events:none
+}
+.rail button {
+    display:grid;
+    place-items:center
+}
+.rail button .icon {
+    width:20px;
+    height:20px
+}
+.nav i {
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    flex:none;
+    width:19px;
+    min-width:19px;
+    font-style:normal
+}
+.nav i .icon {
+    width:17px;
+    height:17px
+}
+.btn .icon { margin-inline:0 }
+.icon-btn {
+    display:inline-grid;
+    place-items:center;
+    width:38px;
+    min-width:38px;
+    height:38px;
+    padding:0
+}
+.msgtools button {
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-width:28px;
+    min-height:27px
+}
+.msgtools .icon { width:14px;height:14px }
+.group-avatar { color:var(--green) }
+.toast {
+    display:flex;
+    align-items:center;
+    gap:10px
+}
+.toast-icon {
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:27px;
+    height:27px;
+    flex:none;
+    border-radius:8px;
+    color:var(--green);
+    background:#00d98218
+}
+.toast.error .toast-icon { color:#ff9292;background:#ff777719 }
+.toast.success .toast-icon { color:#49e8a2 }
+.toast-text { min-width:0;line-height:1.45 }
+.callcontrols .btn {
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px
+}
+.callcontrols .icon { width:16px;height:16px }
+@media(max-width:640px) {
+    .icon-btn { width:36px;min-width:36px;height:36px }
+    .toast { max-width:calc(100vw - 28px) }
+}
