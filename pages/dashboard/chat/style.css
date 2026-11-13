@@ -180,11 +180,11 @@
 .nodegg-emoji-preview {
     position: absolute;
     z-index: 1;
-    inset: 0;
     display: flex;
     align-items: center;
     overflow: hidden;
-    padding: 0 15px;
+    box-sizing: border-box;
+    padding: 0;
     color: var(--text-main, #edf4f0);
     font: inherit;
     line-height: inherit;
