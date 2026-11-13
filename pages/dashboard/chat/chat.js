@@ -981,11 +981,13 @@
                     );
 
                     const avatarUrl = getSafeAvatarUrl(
-                        isMine
+                        message.senderAvatar ||
+                        message.avatar ||
+                        message.senderAvatarUrl ||
+                        message.avatarUrl ||
+                        (isMine
                             ? state.currentUser?.avatar
-                            : message.senderAvatar || message.avatar ||
-                              message.senderAvatarUrl || message.avatarUrl ||
-                              conversation?.avatar || conversation?.avatarUrl
+                            : conversation?.avatar || conversation?.avatarUrl)
                     );
 
                     const emojiOnly = isEmojiOnly(content);
@@ -1013,6 +1015,25 @@
                     `;
                 })
                 .join('');
+
+        // Se a imagem não carregar, substitui por iniciais sem quebrar a mensagem.
+        els.messagesContainer
+            .querySelectorAll('.message-author-avatar')
+            .forEach(image => {
+                image.addEventListener('error', () => {
+                    const fallback = document.createElement('span');
+                    fallback.className = 'message-author-fallback';
+                    fallback.textContent =
+                        initials(image.closest('.message-author')
+                            ?.querySelector('.message-author-name')
+                            ?.textContent || 'U');
+                    image.replaceWith(fallback);
+                }, { once: true });
+            });
+
+        if (window.NodeTwemoji?.renderAll) {
+            window.NodeTwemoji.renderAll(els.messagesContainer);
+        }
 
         if (
             !keepScroll ||
