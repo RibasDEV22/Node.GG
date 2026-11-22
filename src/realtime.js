@@ -79,7 +79,8 @@ export class Realtime extends EventTarget {
           reject(error);
         }
 
-        if (this.ws === ws) this.ws = null;
+        if (this.ws !== ws) return;
+        this.ws = null;
 
         this.rejectPending(error);
         this.dispatchEvent(new CustomEvent("close", {
@@ -148,15 +149,16 @@ export class Realtime extends EventTarget {
       return;
     }
 
-    const match = [...this.pending.entries()].find(([, pending]) =>
+    const match = data.requestId ? [data.requestId, this.pending.get(data.requestId)] : [...this.pending.entries()].find(([, pending]) =>
       pending.types.includes(data.type)
     );
 
-    if (match) {
+    if (match?.[1] && (match[1].types.includes(data.type) || /_error$/.test(data.type))) {
       const [id, pending] = match;
       clearTimeout(pending.timer);
       this.pending.delete(id);
-      pending.resolve(data);
+      if (pending.types.includes(data.type)) pending.resolve(data);
+      else pending.reject(new Error(data.message || "Falha na solicitação."));
     }
 
     this.dispatchEvent(new CustomEvent("message", { detail: data }));
@@ -192,7 +194,7 @@ export class Realtime extends EventTarget {
       });
 
       try {
-        this.send(data);
+        this.send({ ...data, requestId: id });
       } catch (error) {
         clearTimeout(timer);
         this.pending.delete(id);
